@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useTaskContext } from '@/context/TaskContext'
+import { useAuth } from '@/context/AuthContext'
 import type { Task } from '@/types/task'
 import KanbanBoard from '@/components/pm/KanbanBoard'
 import ListView from '@/components/pm/ListView'
@@ -9,8 +11,13 @@ import StatsBar from '@/components/pm/StatsBar'
 
 export default function PMPage() {
   const { tasks, loading, error, fetchTasks, createTask, updateTask, deleteTask, moveTask } = useTaskContext()
+  const { logout } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const projectTitle: string | undefined = (location.state as { projectTitle?: string } | null)?.projectTitle
+
   const [view, setView] = useState<'kanban' | 'list'>('kanban')
-  const [showModal, setShowModal] = useState(false)
+  const [showTaskModal, setShowTaskModal] = useState(false)
   const [editTask, setEditTask] = useState<Task | null>(null)
   const [search, setSearch] = useState('')
   const [filterPriority, setFilterPriority] = useState('all')
@@ -33,7 +40,7 @@ export default function PMPage() {
     } else {
       await createTask(data)
     }
-    setShowModal(false)
+    setShowTaskModal(false)
     setEditTask(null)
   }
 
@@ -43,19 +50,22 @@ export default function PMPage() {
         tasks={tasks}
         view={view}
         onViewChange={setView}
-        onNewTask={() => { setEditTask(null); setShowModal(true) }}
-        hasApiKey={Boolean(import.meta.env.VITE_API_KEY)}
+        onNewTask={() => { setEditTask(null); setShowTaskModal(true) }}
+        onNewProject={() => navigate('/projects')}
+        onLogout={logout}
+        subtitle={projectTitle}
+        hasApiKey={true}
       />
 
       {loading && (
         <div className="flex items-center justify-center h-64 text-gray-500">
-          Loading tasks...
+          Loading tasks…
         </div>
       )}
 
       {!loading && error && (
-        <div className="flex items-center justify-center h-64 text-red-400">
-          Error: {error}
+        <div className="flex items-center justify-center h-64 text-red-400 text-sm">
+          {error}
         </div>
       )}
 
@@ -68,14 +78,14 @@ export default function PMPage() {
             allTags={allTags}
           />
           {view === 'kanban'
-            ? <KanbanBoard tasks={filtered} onEdit={t => { setEditTask(t); setShowModal(true) }} onDelete={deleteTask} onMove={moveTask} />
-            : <ListView tasks={filtered} onEdit={t => { setEditTask(t); setShowModal(true) }} onDelete={deleteTask} onMove={moveTask} />
+            ? <KanbanBoard tasks={filtered} onEdit={t => { setEditTask(t); setShowTaskModal(true) }} onDelete={deleteTask} onMove={moveTask} />
+            : <ListView tasks={filtered} onEdit={t => { setEditTask(t); setShowTaskModal(true) }} onDelete={deleteTask} onMove={moveTask} />
           }
         </>
       )}
 
-      {showModal && (
-        <TaskModal task={editTask} allTags={allTags} onSave={handleSave} onClose={() => { setShowModal(false); setEditTask(null) }} />
+      {showTaskModal && (
+        <TaskModal task={editTask} allTags={allTags} onSave={handleSave} onClose={() => { setShowTaskModal(false); setEditTask(null) }} />
       )}
     </div>
   )

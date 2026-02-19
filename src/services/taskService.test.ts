@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { taskService } from './taskService'
+import { taskService, resetTasksCache } from './taskService'
 
 // Backend shape (snake_case, integer id, label encodes priority+tags)
 const backendTask = {
@@ -14,18 +14,29 @@ const backendTask = {
   updated_at: new Date().toISOString(),
 }
 
+// Each test gets a fresh cache so epics are always re-fetched
 beforeEach(() => {
   vi.resetAllMocks()
+  resetTasksCache()
 })
+
+// Helper: mock fetch to return epics first, then the task operation result
+function mockFetch(...responses: object[]) {
+  const epicsResponse = { ok: true, json: async () => [{ id: 1 }] }
+  global.fetch = vi.fn()
+  const mockFn = global.fetch as ReturnType<typeof vi.fn>
+  mockFn.mockResolvedValueOnce(epicsResponse as any)
+  for (const r of responses) {
+    mockFn.mockResolvedValueOnce(r as any)
+  }
+  return mockFn
+}
 
 describe('taskService.getAll', () => {
   it('should fetch and return all tasks mapped to frontend shape', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => [backendTask],
-    } as any)
+    mockFetch({ ok: true, json: async () => [backendTask] })
 
-    const tasks = await taskService.getAll()
+    const tasks = await taskService.getAll(1)
     expect(tasks).toHaveLength(1)
     expect(tasks[0].title).toBe('Test Task')
     expect(tasks[0].id).toBe('1')           // integer → string
@@ -33,19 +44,16 @@ describe('taskService.getAll', () => {
   })
 
   it('should throw on failed fetch', async () => {
-    global.fetch = vi.fn().mockResolvedValue({ ok: false } as any)
-    await expect(taskService.getAll()).rejects.toThrow('Failed to fetch tasks')
+    mockFetch({ ok: false })
+    await expect(taskService.getAll(1)).rejects.toThrow('Failed to fetch tasks')
   })
 })
 
 describe('taskService.create', () => {
   it('should POST and return created task', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => backendTask,
-    } as any)
+    mockFetch({ ok: true, json: async () => backendTask })
 
-    const result = await taskService.create({
+    const result = await taskService.create(1, {
       title: 'Test Task',
       status: 'backlog',
       priority: 'medium',
@@ -58,38 +66,32 @@ describe('taskService.create', () => {
 
 describe('taskService.update', () => {
   it('should PATCH and return updated task', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ ...backendTask, title: 'Updated' }),
-    } as any)
+    mockFetch({ ok: true, json: async () => ({ ...backendTask, title: 'Updated' }) })
 
-    const result = await taskService.update('1', { title: 'Updated' })
+    const result = await taskService.update(1, '1', { title: 'Updated' })
     expect(result.title).toBe('Updated')
   })
 
   it('should encode priority+tags into label when both provided', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    mockFetch({
       ok: true,
       json: async () => ({
         ...backendTask,
         label: JSON.stringify({ priority: 'high', tags: ['frontend'] }),
       }),
-    } as any)
+    })
 
-    const result = await taskService.update('1', { priority: 'high', tags: ['frontend'] })
+    const result = await taskService.update(1, '1', { priority: 'high', tags: ['frontend'] })
     expect(result.priority).toBe('high')
     expect(result.tags).toEqual(['frontend'])
   })
 
   it('should omit label when only status is updated (move operation)', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ ...backendTask, status: 'done' }),
-    } as any)
-    global.fetch = fetchMock
+    const fetchMock = mockFetch({ ok: true, json: async () => ({ ...backendTask, status: 'done' }) })
 
-    await taskService.update('1', { status: 'done' })
-    const body = JSON.parse(fetchMock.mock.calls[0][1].body)
+    await taskService.update(1, '1', { status: 'done' })
+    // calls[0] = epics, calls[1] = the PATCH
+    const body = JSON.parse(fetchMock.mock.calls[1][1].body)
     expect(body).not.toHaveProperty('label')
     expect(body.status).toBe('done')
   })
@@ -97,7 +99,7 @@ describe('taskService.update', () => {
 
 describe('taskService.remove', () => {
   it('should DELETE the task', async () => {
-    global.fetch = vi.fn().mockResolvedValue({ ok: true } as any)
-    await expect(taskService.remove('1')).resolves.toBeUndefined()
+    mockFetch({ ok: true })
+    await expect(taskService.remove(1, '1')).resolves.toBeUndefined()
   })
 })

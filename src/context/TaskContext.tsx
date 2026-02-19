@@ -1,4 +1,5 @@
-import { createContext, useContext, useReducer, useCallback, ReactNode } from 'react'
+import { createContext, useContext, useReducer, useCallback } from 'react'
+import type { ReactNode } from 'react'
 import type { Task, CreateTaskInput, UpdateTaskInput } from '@/types/task'
 import { taskService } from '@/services/taskService'
 
@@ -36,38 +37,38 @@ interface TaskContextValue {
 
 const TaskContext = createContext<TaskContextValue | null>(null)
 
-export function TaskProvider({ children }: { children: ReactNode }) {
+export function TaskProvider({ projectId, children }: { projectId: number; children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, { tasks: [], loading: true, error: null })
 
   const fetchTasks = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', payload: true })
     try {
-      const tasks = await taskService.getAll()
+      const tasks = await taskService.getAll(projectId)
       dispatch({ type: 'SET_TASKS', payload: tasks })
     } catch (e: unknown) {
       dispatch({ type: 'SET_ERROR', payload: (e as Error).message })
     }
-  }, [])
+  }, [projectId])
 
   const createTask = useCallback(async (data: CreateTaskInput) => {
-    const task = await taskService.create(data)
+    const task = await taskService.create(projectId, data)
     dispatch({ type: 'ADD_TASK', payload: task })
-  }, [])
+  }, [projectId])
 
   const updateTask = useCallback(async (id: string, data: UpdateTaskInput) => {
-    const task = await taskService.update(id, data)
+    const task = await taskService.update(projectId, id, data)
     dispatch({ type: 'UPDATE_TASK', payload: task })
-  }, [])
+  }, [projectId])
 
   const deleteTask = useCallback(async (id: string) => {
-    await taskService.remove(id)
+    await taskService.remove(projectId, id)
     dispatch({ type: 'DELETE_TASK', payload: id })
-  }, [])
+  }, [projectId])
 
   const moveTask = useCallback(async (id: string, status: Task['status']) => {
-    const task = await taskService.update(id, { status })
+    const task = await taskService.update(projectId, id, { status })
     dispatch({ type: 'UPDATE_TASK', payload: task })
-  }, [])
+  }, [projectId])
 
   return (
     <TaskContext.Provider value={{ ...state, fetchTasks, createTask, updateTask, deleteTask, moveTask }}>

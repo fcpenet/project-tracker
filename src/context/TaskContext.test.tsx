@@ -20,13 +20,13 @@ beforeEach(() => vi.restoreAllMocks())
 describe('TaskContext', () => {
   it('renders loading state initially', () => {
     vi.spyOn(taskService.taskService, 'getAll').mockResolvedValue([])
-    render(<TaskProvider><Consumer /></TaskProvider>)
+    render(<TaskProvider projectId={1}><Consumer /></TaskProvider>)
     expect(screen.getByText('Loading')).toBeInTheDocument()
   })
 
   it('renders tasks after fetch', async () => {
     vi.spyOn(taskService.taskService, 'getAll').mockResolvedValue([mockTask])
-    render(<TaskProvider><Consumer /></TaskProvider>)
+    render(<TaskProvider projectId={1}><Consumer /></TaskProvider>)
     await act(async () => {})
     // Note: fetchTasks must be called explicitly — trigger from PMPage useEffect
   })

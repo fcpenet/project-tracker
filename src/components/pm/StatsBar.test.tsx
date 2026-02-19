@@ -31,41 +31,46 @@ describe('StatsBar', () => {
   })
 
   describe('New Project button — no API key', () => {
-    it('is disabled when hasApiKey is false', () => {
+    it('is disabled', () => {
       render(<StatsBar {...baseProps} hasApiKey={false} />)
       expect(screen.getByText(/new project/i).closest('button')).toBeDisabled()
     })
 
-    it('shows the ? icon when disabled', () => {
+    it('shows lock icon', () => {
       render(<StatsBar {...baseProps} hasApiKey={false} />)
-      expect(screen.getByRole('button', { name: /why is this disabled/i })).toBeInTheDocument()
+      expect(screen.getByText(/🔒/)).toBeInTheDocument()
     })
 
-    it('shows tooltip with login link on ? hover', () => {
+    it('shows tooltip content on hover', () => {
       render(<StatsBar {...baseProps} hasApiKey={false} />)
-      fireEvent.mouseEnter(screen.getByRole('button', { name: /why is this disabled/i }))
+      fireEvent.mouseEnter(screen.getByTestId('new-project-wrapper'))
       expect(screen.getByText(/api key is required/i)).toBeInTheDocument()
-      expect(screen.getByRole('link', { name: /log in/i })).toBeInTheDocument()
     })
 
-    it('hides tooltip when mouse leaves ?', () => {
+    it('hides tooltip after mouse leaves', () => {
       render(<StatsBar {...baseProps} hasApiKey={false} />)
-      const trigger = screen.getByRole('button', { name: /why is this disabled/i })
-      fireEvent.mouseEnter(trigger)
-      fireEvent.mouseLeave(trigger)
+      const wrapper = screen.getByTestId('new-project-wrapper')
+      fireEvent.mouseEnter(wrapper)
+      expect(screen.getByText(/api key is required/i)).toBeInTheDocument()
+      fireEvent.mouseLeave(wrapper)
       expect(screen.queryByText(/api key is required/i)).not.toBeInTheDocument()
     })
   })
 
   describe('New Project button — with API key', () => {
-    it('is enabled when hasApiKey is true', () => {
+    it('is enabled', () => {
       render(<StatsBar {...baseProps} hasApiKey={true} />)
       expect(screen.getByText(/new project/i).closest('button')).not.toBeDisabled()
     })
 
-    it('does not show the ? icon when enabled', () => {
+    it('does not show lock icon', () => {
       render(<StatsBar {...baseProps} hasApiKey={true} />)
-      expect(screen.queryByRole('button', { name: /why is this disabled/i })).not.toBeInTheDocument()
+      expect(screen.queryByText(/🔒/)).not.toBeInTheDocument()
+    })
+
+    it('does not render tooltip', () => {
+      render(<StatsBar {...baseProps} hasApiKey={true} />)
+      expect(screen.queryByText(/api key is required/i)).not.toBeInTheDocument()
     })
 
     it('calls onNewProject when clicked', () => {

@@ -1,11 +1,17 @@
 import type { Task, CreateTaskInput, UpdateTaskInput } from '@/types/task'
 
 const BASE_URL = import.meta.env.VITE_API_URL
-const API_KEY  = import.meta.env.VITE_API_KEY
 
-const writeHeaders = {
-  'Content-Type': 'application/json',
-  'X-API-Key': API_KEY,
+function apiKey(): string {
+  return localStorage.getItem('apiKey') ?? ''
+}
+
+function authHeaders() {
+  return { 'X-API-Key': apiKey() }
+}
+
+function writeHeaders() {
+  return { 'Content-Type': 'application/json', 'X-API-Key': apiKey() }
 }
 
 // Shape returned by the backend
@@ -52,43 +58,42 @@ function toTask(b: BackendTask): Task {
   }
 }
 
-// Resolved once on first use, reused for all subsequent calls
-let tasksUrlCache: Promise<string> | null = null
+// Cache keyed by projectId — cleared on logout or per-project reset
+const tasksUrlCache = new Map<number, Promise<string>>()
 
-async function getTasksUrl(): Promise<string> {
-  if (tasksUrlCache) return tasksUrlCache
-  tasksUrlCache = (async () => {
-    const projectsRes = await fetch(`${BASE_URL}/api/projects/`)
-    if (!projectsRes.ok) throw new Error('Failed to load projects')
-    const projects: { id: number }[] = await projectsRes.json()
-    if (!projects.length) throw new Error('No projects found')
-    const projectId = projects[0].id
+export function resetTasksCache(projectId?: number) {
+  if (projectId !== undefined) tasksUrlCache.delete(projectId)
+  else tasksUrlCache.clear()
+}
 
-    const epicsRes = await fetch(`${BASE_URL}/api/projects/${projectId}/epics`)
+async function getTasksUrl(projectId: number): Promise<string> {
+  if (tasksUrlCache.has(projectId)) return tasksUrlCache.get(projectId)!
+  const promise = (async () => {
+    const epicsRes = await fetch(`${BASE_URL}/api/projects/${projectId}/epics`, { headers: authHeaders() })
     if (!epicsRes.ok) throw new Error('Failed to load epics')
     const epics: { id: number }[] = await epicsRes.json()
-    if (!epics.length) throw new Error('No epics found')
+    if (!epics.length) throw new Error('This project has no epics yet')
     const epicId = epics[0].id
-
     return `${BASE_URL}/api/projects/${projectId}/epics/${epicId}/tasks`
   })()
-  return tasksUrlCache
+  tasksUrlCache.set(projectId, promise)
+  return promise
 }
 
 export const taskService = {
-  async getAll(): Promise<Task[]> {
-    const url = await getTasksUrl()
-    const res = await fetch(url)
+  async getAll(projectId: number): Promise<Task[]> {
+    const url = await getTasksUrl(projectId)
+    const res = await fetch(url, { headers: authHeaders() })
     if (!res.ok) throw new Error('Failed to fetch tasks')
     const data: BackendTask[] = await res.json()
     return data.map(toTask)
   },
 
-  async create(data: CreateTaskInput): Promise<Task> {
-    const url = await getTasksUrl()
+  async create(projectId: number, data: CreateTaskInput): Promise<Task> {
+    const url = await getTasksUrl(projectId)
     const res = await fetch(url, {
       method: 'POST',
-      headers: writeHeaders,
+      headers: writeHeaders(),
       body: JSON.stringify({
         title:       data.title,
         description: data.description ?? null,
@@ -101,8 +106,8 @@ export const taskService = {
     return toTask(await res.json())
   },
 
-  async update(id: string, data: UpdateTaskInput): Promise<Task> {
-    const url = await getTasksUrl()
+  async update(projectId: number, id: string, data: UpdateTaskInput): Promise<Task> {
+    const url = await getTasksUrl(projectId)
     const body: Record<string, unknown> = {}
     if (data.title       !== undefined) body.title       = data.title
     if (data.description !== undefined) body.description = data.description ?? null
@@ -115,18 +120,18 @@ export const taskService = {
     }
     const res = await fetch(`${url}/${id}`, {
       method: 'PATCH',
-      headers: writeHeaders,
+      headers: writeHeaders(),
       body: JSON.stringify(body),
     })
     if (!res.ok) throw new Error('Failed to update task')
     return toTask(await res.json())
   },
 
-  async remove(id: string): Promise<void> {
-    const url = await getTasksUrl()
+  async remove(projectId: number, id: string): Promise<void> {
+    const url = await getTasksUrl(projectId)
     const res = await fetch(`${url}/${id}`, {
       method: 'DELETE',
-      headers: { 'X-API-Key': API_KEY },
+      headers: authHeaders(),
     })
     if (!res.ok) throw new Error('Failed to delete task')
   },
