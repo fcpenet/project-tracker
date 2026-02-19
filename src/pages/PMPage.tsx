@@ -37,31 +37,43 @@ export default function PMPage() {
     setEditTask(null)
   }
 
-  if (loading) return (
-    <div className="min-h-screen bg-[#0d0f14] flex items-center justify-center text-gray-500 font-mono">
-      Loading tasks...
-    </div>
-  )
-
-  if (error) return (
-    <div className="min-h-screen bg-[#0d0f14] flex items-center justify-center text-red-400 font-mono">
-      Error: {error}
-    </div>
-  )
-
   return (
     <div className="min-h-screen bg-[#0d0f14] text-gray-200 font-mono">
-      <StatsBar tasks={tasks} view={view} onViewChange={setView} onNewTask={() => { setEditTask(null); setShowModal(true) }} />
-      <FilterBar
-        search={search} onSearch={setSearch}
-        filterPriority={filterPriority} onFilterPriority={setFilterPriority}
-        filterTag={filterTag} onFilterTag={setFilterTag}
-        allTags={allTags}
+      <StatsBar
+        tasks={tasks}
+        view={view}
+        onViewChange={setView}
+        onNewTask={() => { setEditTask(null); setShowModal(true) }}
+        hasApiKey={Boolean(import.meta.env.VITE_API_KEY)}
       />
-      {view === 'kanban'
-        ? <KanbanBoard tasks={filtered} onEdit={t => { setEditTask(t); setShowModal(true) }} onDelete={deleteTask} onMove={moveTask} />
-        : <ListView tasks={filtered} onEdit={t => { setEditTask(t); setShowModal(true) }} onDelete={deleteTask} onMove={moveTask} />
-      }
+
+      {loading && (
+        <div className="flex items-center justify-center h-64 text-gray-500">
+          Loading tasks...
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="flex items-center justify-center h-64 text-red-400">
+          Error: {error}
+        </div>
+      )}
+
+      {!loading && !error && (
+        <>
+          <FilterBar
+            search={search} onSearch={setSearch}
+            filterPriority={filterPriority} onFilterPriority={setFilterPriority}
+            filterTag={filterTag} onFilterTag={setFilterTag}
+            allTags={allTags}
+          />
+          {view === 'kanban'
+            ? <KanbanBoard tasks={filtered} onEdit={t => { setEditTask(t); setShowModal(true) }} onDelete={deleteTask} onMove={moveTask} />
+            : <ListView tasks={filtered} onEdit={t => { setEditTask(t); setShowModal(true) }} onDelete={deleteTask} onMove={moveTask} />
+          }
+        </>
+      )}
+
       {showModal && (
         <TaskModal task={editTask} allTags={allTags} onSave={handleSave} onClose={() => { setShowModal(false); setEditTask(null) }} />
       )}
