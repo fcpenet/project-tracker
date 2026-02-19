@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Task, CreateTaskInput, Priority, Status } from '@/types/task'
+import type { Task, CreateTaskInput, Priority, Status } from '@/types/task'
 
 interface Props {
   task: Task | null

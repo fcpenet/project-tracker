@@ -1,5 +1,5 @@
 import { createContext, useContext, useReducer, useCallback, ReactNode } from 'react'
-import { Task, CreateTaskInput, UpdateTaskInput } from '@/types/task'
+import type { Task, CreateTaskInput, UpdateTaskInput } from '@/types/task'
 import { taskService } from '@/services/taskService'
 
 type State = { tasks: Task[]; loading: boolean; error: string | null }

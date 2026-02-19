@@ -1,4 +1,4 @@
-import { Task } from '@/types/task'
+import type { Task } from '@/types/task'
 
 const priorityColors: Record<Task['priority'], string> = {
   urgent: 'text-[#ff3b3b] border-[#ff3b3b]',

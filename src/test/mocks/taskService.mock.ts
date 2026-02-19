@@ -1,6 +1,6 @@
 // Reusable mock for taskService — import this in component tests
 import { vi } from 'vitest'
-import { Task } from '@/types/task'
+import type { Task } from '@/types/task'
 
 export const mockTasks: Task[] = [
   {

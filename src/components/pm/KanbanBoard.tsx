@@ -1,4 +1,4 @@
-import { Task } from '@/types/task'
+import type { Task } from '@/types/task'
 import TaskCard from './TaskCard'
 
 const COLUMNS: Task['status'][] = ['backlog', 'in progress', 'review', 'done']

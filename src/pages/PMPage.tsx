@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTaskContext } from '@/context/TaskContext'
-import { Task } from '@/types/task'
+import type { Task } from '@/types/task'
 import KanbanBoard from '@/components/pm/KanbanBoard'
 import ListView from '@/components/pm/ListView'
 import TaskModal from '@/components/pm/TaskModal'

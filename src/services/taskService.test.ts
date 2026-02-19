@@ -1,18 +1,17 @@
-// ⚠️ These tests are EXPECTED TO FAIL until real API endpoints are wired up.
-// They serve as a contract — once your backend routes are confirmed, fill in
-// the correct paths in taskService.ts and these should pass.
-
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { taskService } from './taskService'
 
-const mockTask = {
-  id: '1',
+// Backend shape (snake_case, integer id, label encodes priority+tags)
+const backendTask = {
+  id: 1,
+  epic_id: 1,
   title: 'Test Task',
-  status: 'backlog' as const,
-  priority: 'medium' as const,
-  tags: [],
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
+  description: null,
+  deadline: null,
+  status: 'backlog',
+  label: JSON.stringify({ priority: 'medium', tags: [] }),
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
 }
 
 beforeEach(() => {
@@ -20,16 +19,17 @@ beforeEach(() => {
 })
 
 describe('taskService.getAll', () => {
-  it('should fetch and return all tasks', async () => {
+  it('should fetch and return all tasks mapped to frontend shape', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => [mockTask],
+      json: async () => [backendTask],
     } as any)
 
     const tasks = await taskService.getAll()
     expect(tasks).toHaveLength(1)
     expect(tasks[0].title).toBe('Test Task')
-    // TODO: Verify this matches actual response shape from your backend
+    expect(tasks[0].id).toBe('1')           // integer → string
+    expect(tasks[0].priority).toBe('medium') // decoded from label
   })
 
   it('should throw on failed fetch', async () => {
@@ -42,7 +42,7 @@ describe('taskService.create', () => {
   it('should POST and return created task', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => mockTask,
+      json: async () => backendTask,
     } as any)
 
     const result = await taskService.create({
@@ -52,7 +52,7 @@ describe('taskService.create', () => {
       tags: [],
     })
     expect(result.id).toBe('1')
-    // TODO: Verify request body shape matches what your backend expects
+    expect(result.priority).toBe('medium')
   })
 })
 
@@ -60,12 +60,38 @@ describe('taskService.update', () => {
   it('should PATCH and return updated task', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ ...mockTask, title: 'Updated' }),
+      json: async () => ({ ...backendTask, title: 'Updated' }),
     } as any)
 
     const result = await taskService.update('1', { title: 'Updated' })
     expect(result.title).toBe('Updated')
-    // TODO: Verify PATCH vs PUT based on your backend
+  })
+
+  it('should encode priority+tags into label when both provided', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ...backendTask,
+        label: JSON.stringify({ priority: 'high', tags: ['frontend'] }),
+      }),
+    } as any)
+
+    const result = await taskService.update('1', { priority: 'high', tags: ['frontend'] })
+    expect(result.priority).toBe('high')
+    expect(result.tags).toEqual(['frontend'])
+  })
+
+  it('should omit label when only status is updated (move operation)', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ ...backendTask, status: 'done' }),
+    } as any)
+    global.fetch = fetchMock
+
+    await taskService.update('1', { status: 'done' })
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body)
+    expect(body).not.toHaveProperty('label')
+    expect(body.status).toBe('done')
   })
 })
 
