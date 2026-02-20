@@ -19,11 +19,11 @@ interface Props {
 
 export default function KanbanBoard({ tasks, onEdit, onDelete, onMove }: Props) {
   return (
-    <div className="grid grid-cols-4 gap-3 p-4 min-h-[calc(100vh-120px)]">
+    <div className="grid grid-cols-4 gap-4 p-6 min-h-[calc(100vh-120px)]">
       {COLUMNS.map(col => {
         const colTasks = tasks.filter(t => t.status === col)
         return (
-          <div key={col} className={`bg-[#12151c] border border-[#2a2d36] border-t-2 ${columnAccent[col]} rounded-lg p-3 space-y-2`}>
+          <div key={col} className={`kanban-column ${columnAccent[col]}`}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-gray-400 uppercase tracking-widest">{col}</span>
               <span className="text-xs text-gray-600">{colTasks.length}</span>

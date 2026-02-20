@@ -19,18 +19,21 @@ export default function TaskCard({ task, onEdit, onDelete, onMove, columns }: Pr
   const isOverdue = task.dueDate && task.status !== 'done' && new Date(task.dueDate) < new Date()
 
   return (
-    <div className="bg-[#161a23] border border-[#2a2d36] rounded p-3 space-y-2">
+    <div
+      onClick={() => onEdit(task)}
+      className="task-card space-y-2"
+    >
       <div className="flex items-start justify-between gap-2">
         <span className="text-sm text-gray-200 leading-snug">{task.title}</span>
         <div className="flex gap-1 shrink-0">
           <button
             title="Edit"
-            onClick={() => onEdit(task)}
+            onClick={e => { e.stopPropagation(); onEdit(task) }}
             className="text-gray-500 hover:text-[#3baaff] text-xs px-1"
           >✎</button>
           <button
             title="Delete"
-            onClick={() => onDelete(task.id)}
+            onClick={e => { e.stopPropagation(); onDelete(task.id) }}
             className="text-gray-500 hover:text-[#ff3b3b] text-xs px-1"
           >✕</button>
         </div>
@@ -56,14 +59,14 @@ export default function TaskCard({ task, onEdit, onDelete, onMove, columns }: Pr
           {columns.indexOf(task.status) > 0 && (
             <button
               title="Move left"
-              onClick={() => onMove(task.id, columns[columns.indexOf(task.status) - 1])}
+              onClick={e => { e.stopPropagation(); onMove(task.id, columns[columns.indexOf(task.status) - 1]) }}
               className="text-[10px] text-gray-500 hover:text-[#3baaff] px-1"
             >←</button>
           )}
           {columns.indexOf(task.status) < columns.length - 1 && (
             <button
               title="Move right"
-              onClick={() => onMove(task.id, columns[columns.indexOf(task.status) + 1])}
+              onClick={e => { e.stopPropagation(); onMove(task.id, columns[columns.indexOf(task.status) + 1]) }}
               className="text-[10px] text-gray-500 hover:text-[#3baaff] px-1"
             >→</button>
           )}

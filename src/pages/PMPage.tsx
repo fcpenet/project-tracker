@@ -26,8 +26,10 @@ export default function PMPage() {
   const [showEpicModal, setShowEpicModal] = useState(false)
   const [editTask, setEditTask] = useState<Task | null>(null)
   const [search, setSearch] = useState('')
+  const [filterStatus, setFilterStatus] = useState('all')
   const [filterPriority, setFilterPriority] = useState('all')
   const [filterTag, setFilterTag] = useState('all')
+  const [filterEpic, setFilterEpic] = useState('all')
   const [epics, setEpics] = useState<Epic[]>([])
 
   const noEpics = error === 'This project has no epics yet'
@@ -42,8 +44,10 @@ export default function PMPage() {
   const allTags = [...new Set(tasks.flatMap(t => t.tags))]
 
   const filtered = tasks.filter(t => {
+    if (filterStatus !== 'all' && t.status !== filterStatus) return false
     if (filterPriority !== 'all' && t.priority !== filterPriority) return false
     if (filterTag !== 'all' && !t.tags.includes(filterTag)) return false
+    if (filterEpic !== 'all' && t.epicId !== filterEpic) return false
     if (search && !t.title.toLowerCase().includes(search.toLowerCase())) return false
     return true
   })
@@ -109,9 +113,12 @@ export default function PMPage() {
         <>
           <FilterBar
             search={search} onSearch={setSearch}
+            filterStatus={filterStatus} onFilterStatus={setFilterStatus}
             filterPriority={filterPriority} onFilterPriority={setFilterPriority}
             filterTag={filterTag} onFilterTag={setFilterTag}
             allTags={allTags}
+            filterEpic={filterEpic} onFilterEpic={setFilterEpic}
+            allEpics={epics.map(e => ({ id: e.id, title: e.title }))}
           />
           {view === 'kanban'
             ? <KanbanBoard tasks={filtered} onEdit={t => { setEditTask(t); setShowTaskModal(true) }} onDelete={deleteTask} onMove={moveTask} />
