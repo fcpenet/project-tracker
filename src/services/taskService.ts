@@ -47,6 +47,7 @@ function toTask(b: BackendTask): Task {
   const { priority = 'medium', tags = [] } = decodeLabel(b.label)
   return {
     id:          String(b.id),
+    epicId:      String(b.epic_id),
     title:       b.title,
     description: b.description ?? undefined,
     status:      (b.status as Task['status']) ?? 'backlog',
@@ -58,40 +59,33 @@ function toTask(b: BackendTask): Task {
   }
 }
 
-// Cache keyed by projectId — cleared on logout or per-project reset
-const tasksUrlCache = new Map<number, Promise<string>>()
-
-export function resetTasksCache(projectId?: number) {
-  if (projectId !== undefined) tasksUrlCache.delete(projectId)
-  else tasksUrlCache.clear()
+function tasksUrl(projectId: number, epicId: number): string {
+  return `${BASE_URL}/api/projects/${projectId}/epics/${epicId}/tasks`
 }
 
-async function getTasksUrl(projectId: number): Promise<string> {
-  if (tasksUrlCache.has(projectId)) return tasksUrlCache.get(projectId)!
-  const promise = (async () => {
+// no-op kept for backwards compat (called from PMPage on epic creation)
+export function resetTasksCache(_projectId?: number) {}
+
+export const taskService = {
+  async getAll(projectId: number): Promise<Task[]> {
     const epicsRes = await fetch(`${BASE_URL}/api/projects/${projectId}/epics`, { headers: authHeaders() })
     if (!epicsRes.ok) throw new Error('Failed to load epics')
     const epics: { id: number }[] = await epicsRes.json()
     if (!epics.length) throw new Error('This project has no epics yet')
-    const epicId = epics[0].id
-    return `${BASE_URL}/api/projects/${projectId}/epics/${epicId}/tasks`
-  })()
-  tasksUrlCache.set(projectId, promise)
-  return promise
-}
 
-export const taskService = {
-  async getAll(projectId: number): Promise<Task[]> {
-    const url = await getTasksUrl(projectId)
-    const res = await fetch(url, { headers: authHeaders() })
-    if (!res.ok) throw new Error('Failed to fetch tasks')
-    const data: BackendTask[] = await res.json()
-    return data.map(toTask)
+    const taskArrays = await Promise.all(
+      epics.map(async (epic) => {
+        const res = await fetch(tasksUrl(projectId, epic.id), { headers: authHeaders() })
+        if (!res.ok) throw new Error('Failed to fetch tasks')
+        const data: BackendTask[] = await res.json()
+        return data.map(toTask)
+      })
+    )
+    return taskArrays.flat()
   },
 
-  async create(projectId: number, data: CreateTaskInput): Promise<Task> {
-    const url = await getTasksUrl(projectId)
-    const res = await fetch(url, {
+  async create(projectId: number, epicId: number, data: CreateTaskInput): Promise<Task> {
+    const res = await fetch(tasksUrl(projectId, epicId), {
       method: 'POST',
       headers: writeHeaders(),
       body: JSON.stringify({
@@ -106,8 +100,7 @@ export const taskService = {
     return toTask(await res.json())
   },
 
-  async update(projectId: number, id: string, data: UpdateTaskInput): Promise<Task> {
-    const url = await getTasksUrl(projectId)
+  async update(projectId: number, epicId: number, id: string, data: UpdateTaskInput): Promise<Task> {
     const body: Record<string, unknown> = {}
     if (data.title       !== undefined) body.title       = data.title
     if (data.description !== undefined) body.description = data.description ?? null
@@ -118,7 +111,7 @@ export const taskService = {
     if (data.priority !== undefined && data.tags !== undefined) {
       body.label = encodeLabel(data.priority, data.tags)
     }
-    const res = await fetch(`${url}/${id}`, {
+    const res = await fetch(`${tasksUrl(projectId, epicId)}/${id}`, {
       method: 'PATCH',
       headers: writeHeaders(),
       body: JSON.stringify(body),
@@ -127,9 +120,8 @@ export const taskService = {
     return toTask(await res.json())
   },
 
-  async remove(projectId: number, id: string): Promise<void> {
-    const url = await getTasksUrl(projectId)
-    const res = await fetch(`${url}/${id}`, {
+  async remove(projectId: number, epicId: number, id: string): Promise<void> {
+    const res = await fetch(`${tasksUrl(projectId, epicId)}/${id}`, {
       method: 'DELETE',
       headers: authHeaders(),
     })

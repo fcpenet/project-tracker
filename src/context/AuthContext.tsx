@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useCallback } from 'react'
 import type { ReactNode } from 'react'
 import { resetTasksCache } from '@/services/taskService'
+import { organizationService } from '@/services/organizationService'
+import { setStoredOrgId, clearStoredOrgId } from '@/services/projectService'
 
 const STORAGE_KEY = 'apiKey'
 
@@ -28,10 +30,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { api_key }: { api_key: string } = await res.json()
     localStorage.setItem(STORAGE_KEY, api_key)
     setApiKey(api_key)
+
+    // Fetch the user's organization and store its id for project creation
+    try {
+      const orgs = await organizationService.getAll()
+      if (orgs.length > 0) setStoredOrgId(orgs[0].id)
+    } catch {
+      // org fetch is best-effort; project creation will fail gracefully if missing
+    }
   }, [])
 
   const logout = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY)
+    clearStoredOrgId()
     resetTasksCache()
     setApiKey(null)
   }, [])

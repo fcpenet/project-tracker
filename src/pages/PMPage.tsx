@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, useParams } from 'react-router-dom'
 import { useTaskContext } from '@/context/TaskContext'
 import { useAuth } from '@/context/AuthContext'
-import type { Task } from '@/types/task'
+import { resetTasksCache } from '@/services/taskService'
+import { epicService } from '@/services/epicService'
+import type { Epic } from '@/services/epicService'
+import type { Task, CreateTaskInput } from '@/types/task'
 import KanbanBoard from '@/components/pm/KanbanBoard'
 import ListView from '@/components/pm/ListView'
 import TaskModal from '@/components/pm/TaskModal'
+import NewEpicModal from '@/components/pm/NewEpicModal'
 import FilterBar from '@/components/pm/FilterBar'
 import StatsBar from '@/components/pm/StatsBar'
 
@@ -14,16 +18,26 @@ export default function PMPage() {
   const { logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const { projectId } = useParams<{ projectId: string }>()
   const projectTitle: string | undefined = (location.state as { projectTitle?: string } | null)?.projectTitle
 
   const [view, setView] = useState<'kanban' | 'list'>('kanban')
   const [showTaskModal, setShowTaskModal] = useState(false)
+  const [showEpicModal, setShowEpicModal] = useState(false)
   const [editTask, setEditTask] = useState<Task | null>(null)
   const [search, setSearch] = useState('')
   const [filterPriority, setFilterPriority] = useState('all')
   const [filterTag, setFilterTag] = useState('all')
+  const [epics, setEpics] = useState<Epic[]>([])
+
+  const noEpics = error === 'This project has no epics yet'
 
   useEffect(() => { fetchTasks() }, [fetchTasks])
+
+  useEffect(() => {
+    if (!projectId) return
+    epicService.getAll(Number(projectId)).then(setEpics).catch(() => {})
+  }, [projectId])
 
   const allTags = [...new Set(tasks.flatMap(t => t.tags))]
 
@@ -34,14 +48,23 @@ export default function PMPage() {
     return true
   })
 
-  async function handleSave(data: Parameters<typeof createTask>[0]) {
+  async function handleSave(data: CreateTaskInput, epicId: number) {
     if (editTask) {
       await updateTask(editTask.id, data)
     } else {
-      await createTask(data)
+      await createTask(epicId, data)
     }
     setShowTaskModal(false)
     setEditTask(null)
+  }
+
+  function handleEpicCreated() {
+    setShowEpicModal(false)
+    resetTasksCache(Number(projectId))
+    fetchTasks()
+    if (projectId) {
+      epicService.getAll(Number(projectId)).then(setEpics).catch(() => {})
+    }
   }
 
   return (
@@ -51,6 +74,7 @@ export default function PMPage() {
         view={view}
         onViewChange={setView}
         onNewTask={() => { setEditTask(null); setShowTaskModal(true) }}
+        onNewEpic={() => setShowEpicModal(true)}
         onNewProject={() => navigate('/projects')}
         onLogout={logout}
         subtitle={projectTitle}
@@ -63,9 +87,21 @@ export default function PMPage() {
         </div>
       )}
 
-      {!loading && error && (
+      {!loading && error && !noEpics && (
         <div className="flex items-center justify-center h-64 text-red-400 text-sm">
           {error}
+        </div>
+      )}
+
+      {!loading && noEpics && (
+        <div className="flex flex-col items-center justify-center h-64 gap-3 text-gray-500 text-sm">
+          <span>This project has no epics yet.</span>
+          <button
+            onClick={() => setShowEpicModal(true)}
+            className="text-xs px-4 py-2 rounded bg-[#3baaff] text-[#0d0f14] font-semibold hover:bg-[#5bbfff] transition-colors"
+          >
+            + Create First Epic
+          </button>
         </div>
       )}
 
@@ -85,7 +121,21 @@ export default function PMPage() {
       )}
 
       {showTaskModal && (
-        <TaskModal task={editTask} allTags={allTags} onSave={handleSave} onClose={() => { setShowTaskModal(false); setEditTask(null) }} />
+        <TaskModal
+          task={editTask}
+          epics={epics.map(e => ({ id: e.id, title: e.title }))}
+          allTags={allTags}
+          onSave={handleSave}
+          onClose={() => { setShowTaskModal(false); setEditTask(null) }}
+        />
+      )}
+
+      {showEpicModal && projectId && (
+        <NewEpicModal
+          projectId={Number(projectId)}
+          onCreated={handleEpicCreated}
+          onClose={() => setShowEpicModal(false)}
+        />
       )}
     </div>
   )

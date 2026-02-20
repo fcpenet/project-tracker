@@ -3,6 +3,7 @@ export type Status = 'backlog' | 'in progress' | 'review' | 'done'
 
 export interface Task {
   id: string
+  epicId: string
   title: string
   description?: string
   status: Status
@@ -13,5 +14,5 @@ export interface Task {
   updatedAt: string
 }
 
-export type CreateTaskInput = Omit<Task, 'id' | 'createdAt' | 'updatedAt'>
+export type CreateTaskInput = Omit<Task, 'id' | 'epicId' | 'createdAt' | 'updatedAt'>
 export type UpdateTaskInput = Partial<CreateTaskInput>

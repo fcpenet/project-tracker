@@ -1,17 +1,23 @@
 import { useState } from 'react'
 import type { Task, CreateTaskInput, Priority, Status } from '@/types/task'
 
+interface EpicOption {
+  id: number
+  title: string
+}
+
 interface Props {
   task: Task | null
+  epics: EpicOption[]
   allTags: string[]
-  onSave: (data: CreateTaskInput) => void
+  onSave: (data: CreateTaskInput, epicId: number) => void
   onClose: () => void
 }
 
 const priorities: Priority[] = ['urgent', 'high', 'medium', 'low']
 const statuses: Status[] = ['backlog', 'in progress', 'review', 'done']
 
-export default function TaskModal({ task, allTags, onSave, onClose }: Props) {
+export default function TaskModal({ task, epics, allTags, onSave, onClose }: Props) {
   const [title, setTitle] = useState(task?.title ?? '')
   const [description, setDescription] = useState(task?.description ?? '')
   const [status, setStatus] = useState<Status>(task?.status ?? 'backlog')
@@ -19,10 +25,13 @@ export default function TaskModal({ task, allTags, onSave, onClose }: Props) {
   const [dueDate, setDueDate] = useState(task?.dueDate ?? '')
   const [tags, setTags] = useState<string[]>(task?.tags ?? [])
   const [newTag, setNewTag] = useState('')
+  const [epicId, setEpicId] = useState<number>(
+    task ? Number(task.epicId) : (epics[0]?.id ?? 0)
+  )
 
   function handleSubmit() {
     if (!title.trim()) return
-    onSave({ title: title.trim(), description: description || undefined, status, priority, dueDate: dueDate || undefined, tags })
+    onSave({ title: title.trim(), description: description || undefined, status, priority, dueDate: dueDate || undefined, tags }, epicId)
   }
 
   function addTag(tag: string) {
@@ -30,6 +39,8 @@ export default function TaskModal({ task, allTags, onSave, onClose }: Props) {
     if (t && !tags.includes(t)) setTags([...tags, t])
     setNewTag('')
   }
+
+  const epicName = epics.find(e => e.id === Number(task?.epicId))?.title ?? `Epic #${task?.epicId}`
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
@@ -52,6 +63,28 @@ export default function TaskModal({ task, allTags, onSave, onClose }: Props) {
           rows={2}
           className="w-full bg-[#0d0f14] border border-[#2a2d36] rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-[#3baaff] resize-none"
         />
+
+        {/* Epic selector (new task) or epic label (edit task) */}
+        {!task ? (
+          <div>
+            <label className="text-[10px] text-gray-500 uppercase">Epic</label>
+            <select
+              value={epicId}
+              onChange={e => setEpicId(Number(e.target.value))}
+              className="w-full bg-[#0d0f14] border border-[#2a2d36] rounded px-2 py-1 text-sm text-gray-200 mt-1"
+            >
+              {epics.map(e => <option key={e.id} value={e.id}>{e.title}</option>)}
+              {epics.length === 0 && <option value={0} disabled>No epics available</option>}
+            </select>
+          </div>
+        ) : (
+          <div>
+            <label className="text-[10px] text-gray-500 uppercase">Epic</label>
+            <p className="text-sm text-gray-400 mt-1 px-2 py-1 bg-[#0d0f14] border border-[#2a2d36] rounded">
+              {epicName}
+            </p>
+          </div>
+        )}
 
         <div className="flex gap-3">
           <div className="flex-1">

@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useCallback } from 'react'
+import { createContext, useContext, useReducer, useCallback, useRef } from 'react'
 import type { ReactNode } from 'react'
 import type { Task, CreateTaskInput, UpdateTaskInput } from '@/types/task'
 import { taskService } from '@/services/taskService'
@@ -29,7 +29,7 @@ interface TaskContextValue {
   loading: boolean
   error: string | null
   fetchTasks: () => Promise<void>
-  createTask: (data: CreateTaskInput) => Promise<void>
+  createTask: (epicId: number, data: CreateTaskInput) => Promise<void>
   updateTask: (id: string, data: UpdateTaskInput) => Promise<void>
   deleteTask: (id: string) => Promise<void>
   moveTask: (id: string, status: Task['status']) => Promise<void>
@@ -39,36 +39,47 @@ const TaskContext = createContext<TaskContextValue | null>(null)
 
 export function TaskProvider({ projectId, children }: { projectId: number; children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, { tasks: [], loading: true, error: null })
+  // Ref used to look up a task's epicId in update/delete/move without stale closures
+  const tasksRef = useRef<Task[]>([])
+
+  function epicIdOf(taskId: string): number {
+    return Number(tasksRef.current.find(t => t.id === taskId)?.epicId ?? 0)
+  }
 
   const fetchTasks = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', payload: true })
     try {
       const tasks = await taskService.getAll(projectId)
+      tasksRef.current = tasks
       dispatch({ type: 'SET_TASKS', payload: tasks })
     } catch (e: unknown) {
       dispatch({ type: 'SET_ERROR', payload: (e as Error).message })
     }
   }, [projectId])
 
-  const createTask = useCallback(async (data: CreateTaskInput) => {
-    const task = await taskService.create(projectId, data)
+  const createTask = useCallback(async (epicId: number, data: CreateTaskInput) => {
+    const task = await taskService.create(projectId, epicId, data)
+    tasksRef.current = [task, ...tasksRef.current]
     dispatch({ type: 'ADD_TASK', payload: task })
   }, [projectId])
 
   const updateTask = useCallback(async (id: string, data: UpdateTaskInput) => {
-    const task = await taskService.update(projectId, id, data)
+    const task = await taskService.update(projectId, epicIdOf(id), id, data)
+    tasksRef.current = tasksRef.current.map(t => t.id === task.id ? task : t)
     dispatch({ type: 'UPDATE_TASK', payload: task })
-  }, [projectId])
+  }, [projectId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const deleteTask = useCallback(async (id: string) => {
-    await taskService.remove(projectId, id)
+    await taskService.remove(projectId, epicIdOf(id), id)
+    tasksRef.current = tasksRef.current.filter(t => t.id !== id)
     dispatch({ type: 'DELETE_TASK', payload: id })
-  }, [projectId])
+  }, [projectId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const moveTask = useCallback(async (id: string, status: Task['status']) => {
-    const task = await taskService.update(projectId, id, { status })
+    const task = await taskService.update(projectId, epicIdOf(id), id, { status })
+    tasksRef.current = tasksRef.current.map(t => t.id === task.id ? task : t)
     dispatch({ type: 'UPDATE_TASK', payload: task })
-  }, [projectId])
+  }, [projectId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <TaskContext.Provider value={{ ...state, fetchTasks, createTask, updateTask, deleteTask, moveTask }}>
