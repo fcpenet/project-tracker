@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { projectService } from './projectService'
 import * as authFetch from './authFetch'
 
-vi.mock('./authFetch', () => ({ notifyUnauthorized: vi.fn() }))
+vi.mock('./authFetch', () => ({ notifyUnauthorized: vi.fn(), isAuthError: (s: number) => s === 401 || s === 403 }))
 
 const backendProject = {
   id: 1,
@@ -34,8 +34,8 @@ describe('projectService.getAll', () => {
     await expect(projectService.getAll()).rejects.toThrow('Failed to load projects')
   })
 
-  it('calls notifyUnauthorized and throws on 401', async () => {
-    global.fetch = vi.fn().mockResolvedValueOnce({ ok: false, status: 401 })
+  it.each([401, 403])('calls notifyUnauthorized and throws on %i', async (status) => {
+    global.fetch = vi.fn().mockResolvedValueOnce({ ok: false, status })
     await expect(projectService.getAll()).rejects.toThrow('Unauthorized')
     expect(authFetch.notifyUnauthorized).toHaveBeenCalled()
   })
@@ -61,8 +61,8 @@ describe('projectService.create', () => {
     await expect(projectService.create('Test Project')).rejects.toThrow('Title already taken')
   })
 
-  it('calls notifyUnauthorized and throws on 401', async () => {
-    global.fetch = vi.fn().mockResolvedValueOnce({ ok: false, status: 401 })
+  it.each([401, 403])('calls notifyUnauthorized and throws on %i', async (status) => {
+    global.fetch = vi.fn().mockResolvedValueOnce({ ok: false, status })
     await expect(projectService.create('Test Project')).rejects.toThrow('Unauthorized')
     expect(authFetch.notifyUnauthorized).toHaveBeenCalled()
   })

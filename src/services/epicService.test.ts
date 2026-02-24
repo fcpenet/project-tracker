@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { epicService } from './epicService'
 import * as authFetch from './authFetch'
 
-vi.mock('./authFetch', () => ({ notifyUnauthorized: vi.fn() }))
+vi.mock('./authFetch', () => ({ notifyUnauthorized: vi.fn(), isAuthError: (s: number) => s === 401 || s === 403 }))
 
 const backendEpic = {
   id: 1,
@@ -33,8 +33,8 @@ describe('epicService.getAll', () => {
     await expect(epicService.getAll(1)).rejects.toThrow('Failed to load epics')
   })
 
-  it('calls notifyUnauthorized and throws on 401', async () => {
-    global.fetch = vi.fn().mockResolvedValueOnce({ ok: false, status: 401 })
+  it.each([401, 403])('calls notifyUnauthorized and throws on %i', async (status) => {
+    global.fetch = vi.fn().mockResolvedValueOnce({ ok: false, status })
     await expect(epicService.getAll(1)).rejects.toThrow('Unauthorized')
     expect(authFetch.notifyUnauthorized).toHaveBeenCalled()
   })
@@ -60,8 +60,8 @@ describe('epicService.create', () => {
     await expect(epicService.create(1, 'Test Epic')).rejects.toThrow('Epic already exists')
   })
 
-  it('calls notifyUnauthorized and throws on 401', async () => {
-    global.fetch = vi.fn().mockResolvedValueOnce({ ok: false, status: 401 })
+  it.each([401, 403])('calls notifyUnauthorized and throws on %i', async (status) => {
+    global.fetch = vi.fn().mockResolvedValueOnce({ ok: false, status })
     await expect(epicService.create(1, 'Test Epic')).rejects.toThrow('Unauthorized')
     expect(authFetch.notifyUnauthorized).toHaveBeenCalled()
   })

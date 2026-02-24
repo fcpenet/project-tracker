@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { taskService, resetTasksCache } from './taskService'
 import * as authFetch from './authFetch'
 
-vi.mock('./authFetch', () => ({ notifyUnauthorized: vi.fn() }))
+vi.mock('./authFetch', () => ({ notifyUnauthorized: vi.fn(), isAuthError: (s: number) => s === 401 || s === 403 }))
 
 // Backend shape (snake_case, integer id, label encodes priority+tags)
 const backendTask = {
@@ -107,39 +107,39 @@ describe('taskService.remove', () => {
   })
 })
 
-describe('taskService — 401 handling', () => {
+describe('taskService — 401/403 handling', () => {
   const notify = vi.mocked(authFetch.notifyUnauthorized)
 
-  it('calls notifyUnauthorized on 401 during epics fetch in getAll', async () => {
-    global.fetch = vi.fn().mockResolvedValueOnce({ ok: false, status: 401 })
+  it.each([401, 403])('calls notifyUnauthorized on %i during epics fetch in getAll', async (status) => {
+    global.fetch = vi.fn().mockResolvedValueOnce({ ok: false, status })
     await expect(taskService.getAll(1)).rejects.toThrow('Unauthorized')
     expect(notify).toHaveBeenCalled()
   })
 
-  it('calls notifyUnauthorized on 401 during task fetch in getAll', async () => {
+  it.each([401, 403])('calls notifyUnauthorized on %i during task fetch in getAll', async (status) => {
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => [{ id: 1 }] })
-      .mockResolvedValueOnce({ ok: false, status: 401 })
+      .mockResolvedValueOnce({ ok: false, status })
     await expect(taskService.getAll(1)).rejects.toThrow('Unauthorized')
     expect(notify).toHaveBeenCalled()
   })
 
-  it('calls notifyUnauthorized on 401 during create', async () => {
-    global.fetch = vi.fn().mockResolvedValueOnce({ ok: false, status: 401 })
+  it.each([401, 403])('calls notifyUnauthorized on %i during create', async (status) => {
+    global.fetch = vi.fn().mockResolvedValueOnce({ ok: false, status })
     await expect(
       taskService.create(1, 1, { title: 'x', status: 'backlog', priority: 'medium', tags: [] })
     ).rejects.toThrow('Unauthorized')
     expect(notify).toHaveBeenCalled()
   })
 
-  it('calls notifyUnauthorized on 401 during update', async () => {
-    global.fetch = vi.fn().mockResolvedValueOnce({ ok: false, status: 401 })
+  it.each([401, 403])('calls notifyUnauthorized on %i during update', async (status) => {
+    global.fetch = vi.fn().mockResolvedValueOnce({ ok: false, status })
     await expect(taskService.update(1, 1, '1', { title: 'x' })).rejects.toThrow('Unauthorized')
     expect(notify).toHaveBeenCalled()
   })
 
-  it('calls notifyUnauthorized on 401 during remove', async () => {
-    global.fetch = vi.fn().mockResolvedValueOnce({ ok: false, status: 401 })
+  it.each([401, 403])('calls notifyUnauthorized on %i during remove', async (status) => {
+    global.fetch = vi.fn().mockResolvedValueOnce({ ok: false, status })
     await expect(taskService.remove(1, 1, '1')).rejects.toThrow('Unauthorized')
     expect(notify).toHaveBeenCalled()
   })

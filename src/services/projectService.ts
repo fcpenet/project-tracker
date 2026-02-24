@@ -1,4 +1,4 @@
-import { notifyUnauthorized } from './authFetch'
+import { notifyUnauthorized, isAuthError } from './authFetch'
 
 const BASE_URL = import.meta.env.VITE_API_URL
 
@@ -36,7 +36,7 @@ export const projectService = {
     const res = await fetch(`${BASE_URL}/api/projects/`, {
       headers: { 'X-API-Key': apiKey() },
     })
-    if (res.status === 401) { notifyUnauthorized(); throw new Error('Unauthorized') }
+    if (isAuthError(res.status)) { notifyUnauthorized(); throw new Error('Unauthorized') }
     if (!res.ok) throw new Error('Failed to load projects')
     return res.json()
   },
@@ -52,7 +52,7 @@ export const projectService = {
         organization_id,
       }),
     })
-    if (res.status === 401) { notifyUnauthorized(); throw new Error('Unauthorized') }
+    if (isAuthError(res.status)) { notifyUnauthorized(); throw new Error('Unauthorized') }
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
       throw new Error(err.detail ?? 'Failed to create project')
