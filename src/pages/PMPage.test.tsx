@@ -43,6 +43,6 @@ describe('PMPage', () => {
   it('renders kanban view by default', async () => {
     render(<PMPage />, { wrapper: Wrapper })
     await act(async () => {})
-    expect(screen.getByText('backlog')).toBeInTheDocument()
+    expect(screen.getAllByText('backlog').length).toBeGreaterThan(0)
   })
 })

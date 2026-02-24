@@ -1,4 +1,5 @@
 import type { Task, CreateTaskInput, UpdateTaskInput } from '@/types/task'
+import { notifyUnauthorized } from './authFetch'
 
 const BASE_URL = import.meta.env.VITE_API_URL
 
@@ -69,6 +70,7 @@ export function resetTasksCache(_projectId?: number) {}
 export const taskService = {
   async getAll(projectId: number): Promise<Task[]> {
     const epicsRes = await fetch(`${BASE_URL}/api/projects/${projectId}/epics`, { headers: authHeaders() })
+    if (epicsRes.status === 401) { notifyUnauthorized(); throw new Error('Unauthorized') }
     if (!epicsRes.ok) throw new Error('Failed to load epics')
     const epics: { id: number }[] = await epicsRes.json()
     if (!epics.length) throw new Error('This project has no epics yet')
@@ -76,6 +78,7 @@ export const taskService = {
     const taskArrays = await Promise.all(
       epics.map(async (epic) => {
         const res = await fetch(tasksUrl(projectId, epic.id), { headers: authHeaders() })
+        if (res.status === 401) { notifyUnauthorized(); throw new Error('Unauthorized') }
         if (!res.ok) throw new Error('Failed to fetch tasks')
         const data: BackendTask[] = await res.json()
         return data.map(toTask)
@@ -96,6 +99,7 @@ export const taskService = {
         label:       encodeLabel(data.priority, data.tags),
       }),
     })
+    if (res.status === 401) { notifyUnauthorized(); throw new Error('Unauthorized') }
     if (!res.ok) throw new Error('Failed to create task')
     return toTask(await res.json())
   },
@@ -116,6 +120,7 @@ export const taskService = {
       headers: writeHeaders(),
       body: JSON.stringify(body),
     })
+    if (res.status === 401) { notifyUnauthorized(); throw new Error('Unauthorized') }
     if (!res.ok) throw new Error('Failed to update task')
     return toTask(await res.json())
   },
@@ -125,6 +130,7 @@ export const taskService = {
       method: 'DELETE',
       headers: authHeaders(),
     })
+    if (res.status === 401) { notifyUnauthorized(); throw new Error('Unauthorized') }
     if (!res.ok) throw new Error('Failed to delete task')
   },
 }

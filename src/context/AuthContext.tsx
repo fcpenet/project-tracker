@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import { resetTasksCache } from '@/services/taskService'
 import { organizationService } from '@/services/organizationService'
@@ -46,6 +46,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     resetTasksCache()
     setApiKey(null)
   }, [])
+
+  useEffect(() => {
+    const handler = () => logout()
+    window.addEventListener('auth:unauthorized', handler)
+    return () => window.removeEventListener('auth:unauthorized', handler)
+  }, [logout])
 
   return (
     <AuthContext.Provider value={{ apiKey, login, logout }}>

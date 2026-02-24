@@ -1,3 +1,5 @@
+import { notifyUnauthorized } from './authFetch'
+
 const BASE_URL = import.meta.env.VITE_API_URL
 
 function apiKey(): string {
@@ -19,6 +21,7 @@ export const epicService = {
     const res = await fetch(`${BASE_URL}/api/projects/${projectId}/epics`, {
       headers: { 'X-API-Key': apiKey() },
     })
+    if (res.status === 401) { notifyUnauthorized(); throw new Error('Unauthorized') }
     if (!res.ok) throw new Error('Failed to load epics')
     return res.json()
   },
@@ -29,6 +32,7 @@ export const epicService = {
       headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey() },
       body: JSON.stringify({ title, description: description ?? null }),
     })
+    if (res.status === 401) { notifyUnauthorized(); throw new Error('Unauthorized') }
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
       throw new Error(err.detail ?? 'Failed to create epic')

@@ -4,9 +4,12 @@ import FilterBar from './FilterBar'
 
 const defaultProps = {
   search: '', onSearch: vi.fn(),
+  filterStatus: 'all', onFilterStatus: vi.fn(),
   filterPriority: 'all', onFilterPriority: vi.fn(),
   filterTag: 'all', onFilterTag: vi.fn(),
   allTags: ['frontend', 'backend'],
+  filterEpic: 'all', onFilterEpic: vi.fn(),
+  allEpics: [],
 }
 
 describe('FilterBar', () => {
