@@ -40,4 +40,15 @@ describe('TaskCard', () => {
     render(<TaskCard task={overdueTask} onEdit={vi.fn()} onDelete={vi.fn()} onMove={vi.fn()} columns={['backlog','in progress','review','done']} />)
     expect(screen.getByText(/⚠/)).toBeInTheDocument()
   })
+
+  it('renders epic name badge when epicNames contains the task epicId', () => {
+    const taskWithEpic = { ...task, epicId: '10' }
+    render(<TaskCard task={taskWithEpic} epicNames={{ '10': 'Sprint 1' }} onEdit={vi.fn()} onDelete={vi.fn()} onMove={vi.fn()} columns={['backlog','in progress','review','done']} />)
+    expect(screen.getByText('Sprint 1')).toBeInTheDocument()
+  })
+
+  it('does not render an epic badge when epicNames is not provided', () => {
+    render(<TaskCard task={task} onEdit={vi.fn()} onDelete={vi.fn()} onMove={vi.fn()} columns={['backlog','in progress','review','done']} />)
+    expect(screen.queryByTitle('epic')).not.toBeInTheDocument()
+  })
 })

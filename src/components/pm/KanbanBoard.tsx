@@ -12,12 +12,13 @@ const columnAccent: Record<Task['status'], string> = {
 
 interface Props {
   tasks: Task[]
+  epicNames?: Record<string, string>
   onEdit: (task: Task) => void
   onDelete: (id: string) => void
   onMove: (id: string, status: Task['status']) => void
 }
 
-export default function KanbanBoard({ tasks, onEdit, onDelete, onMove }: Props) {
+export default function KanbanBoard({ tasks, epicNames, onEdit, onDelete, onMove }: Props) {
   return (
     <div className="grid grid-cols-4 gap-4 p-6 min-h-[calc(100vh-120px)]">
       {COLUMNS.map(col => {
@@ -29,7 +30,7 @@ export default function KanbanBoard({ tasks, onEdit, onDelete, onMove }: Props) 
               <span className="text-xs text-gray-600">{colTasks.length}</span>
             </div>
             {colTasks.map(task => (
-              <TaskCard key={task.id} task={task} onEdit={onEdit} onDelete={onDelete} onMove={onMove} columns={COLUMNS} />
+              <TaskCard key={task.id} task={task} epicNames={epicNames} onEdit={onEdit} onDelete={onDelete} onMove={onMove} columns={COLUMNS} />
             ))}
           </div>
         )

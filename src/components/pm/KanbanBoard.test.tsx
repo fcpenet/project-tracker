@@ -17,4 +17,10 @@ describe('KanbanBoard', () => {
     expect(screen.getByText('Build landing page')).toBeInTheDocument()
     expect(screen.getByText('Write unit tests')).toBeInTheDocument()
   })
+
+  it('passes epicNames down so task cards show epic badges', () => {
+    render(<KanbanBoard tasks={mockTasks} epicNames={{ '10': 'Sprint 1', '11': 'Sprint 2' }} onEdit={vi.fn()} onDelete={vi.fn()} onMove={vi.fn()} />)
+    expect(screen.getAllByText('Sprint 1').length).toBeGreaterThan(0)
+    expect(screen.getByText('Sprint 2')).toBeInTheDocument()
+  })
 })

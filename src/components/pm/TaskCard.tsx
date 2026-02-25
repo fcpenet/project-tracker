@@ -9,13 +9,15 @@ const priorityColors: Record<Task['priority'], string> = {
 
 interface Props {
   task: Task
+  epicNames?: Record<string, string>
   onEdit: (task: Task) => void
   onDelete: (id: string) => void
   onMove: (id: string, status: Task['status']) => void
   columns: Task['status'][]
 }
 
-export default function TaskCard({ task, onEdit, onDelete, onMove, columns }: Props) {
+export default function TaskCard({ task, epicNames, onEdit, onDelete, onMove, columns }: Props) {
+  const epicName = epicNames?.[task.epicId]
   const isOverdue = task.dueDate && task.status !== 'done' && new Date(task.dueDate) < new Date()
 
   return (
@@ -43,6 +45,11 @@ export default function TaskCard({ task, onEdit, onDelete, onMove, columns }: Pr
         <span className={`text-[10px] border rounded px-1 ${priorityColors[task.priority]}`}>
           {task.priority}
         </span>
+        {epicName && (
+          <span className="text-[10px] bg-[#1e2330] text-[#3baaff] border border-[#3baaff]/30 rounded px-1">
+            {epicName}
+          </span>
+        )}
         {task.tags.map(tag => (
           <span key={tag} className="text-[10px] bg-[#1e2330] text-gray-400 rounded px-1">{tag}</span>
         ))}

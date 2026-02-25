@@ -121,7 +121,7 @@ export default function PMPage() {
             allEpics={epics.map(e => ({ id: e.id, title: e.title }))}
           />
           {view === 'kanban'
-            ? <KanbanBoard tasks={filtered} onEdit={t => { setEditTask(t); setShowTaskModal(true) }} onDelete={deleteTask} onMove={moveTask} />
+            ? <KanbanBoard tasks={filtered} epicNames={Object.fromEntries(epics.map(e => [String(e.id), e.title]))} onEdit={t => { setEditTask(t); setShowTaskModal(true) }} onDelete={deleteTask} onMove={moveTask} />
             : <ListView tasks={filtered} onEdit={t => { setEditTask(t); setShowTaskModal(true) }} onDelete={deleteTask} onMove={moveTask} />
           }
         </>
