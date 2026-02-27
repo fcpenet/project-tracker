@@ -32,6 +32,25 @@ describe('TaskModal — Create Mode', () => {
     fireEvent.click(screen.getByText('Cancel'))
     expect(onClose).toHaveBeenCalled()
   })
+
+  it('disables the submit button while saving is in progress', async () => {
+    const user = userEvent.setup()
+    const onSave = vi.fn().mockReturnValue(new Promise<void>(() => {}))
+    render(<TaskModal task={null} epics={[{ id: 1, title: 'Sprint 1' }]} allTags={[]} onSave={onSave} onClose={vi.fn()} />)
+    await user.type(screen.getByPlaceholderText(/task title/i), 'Test')
+    await user.click(screen.getByText('Create Task'))
+    expect(screen.getByText('Create Task')).toBeDisabled()
+  })
+
+  it('does not call onSave a second time if button is clicked while saving', async () => {
+    const user = userEvent.setup()
+    const onSave = vi.fn().mockReturnValue(new Promise<void>(() => {}))
+    render(<TaskModal task={null} epics={[{ id: 1, title: 'Sprint 1' }]} allTags={[]} onSave={onSave} onClose={vi.fn()} />)
+    await user.type(screen.getByPlaceholderText(/task title/i), 'Test')
+    await user.click(screen.getByText('Create Task'))
+    await user.click(screen.getByText('Create Task'))
+    expect(onSave).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('TaskModal — Edit Mode', () => {

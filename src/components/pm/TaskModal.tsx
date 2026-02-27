@@ -10,7 +10,7 @@ interface Props {
   task: Task | null
   epics: EpicOption[]
   allTags: string[]
-  onSave: (data: CreateTaskInput, epicId: number) => void
+  onSave: (data: CreateTaskInput, epicId: number) => Promise<void>
   onClose: () => void
 }
 
@@ -28,10 +28,16 @@ export default function TaskModal({ task, epics, allTags, onSave, onClose }: Pro
   const [epicId, setEpicId] = useState<number>(
     task ? Number(task.epicId) : (epics[0]?.id ?? 0)
   )
+  const [submitting, setSubmitting] = useState(false)
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!title.trim()) return
-    onSave({ title: title.trim(), description: description || undefined, status, priority, dueDate: dueDate || undefined, tags }, epicId)
+    setSubmitting(true)
+    try {
+      await onSave({ title: title.trim(), description: description || undefined, status, priority, dueDate: dueDate || undefined, tags }, epicId)
+    } catch {
+      setSubmitting(false)
+    }
   }
 
   function addTag(tag: string) {
@@ -146,7 +152,8 @@ export default function TaskModal({ task, epics, allTags, onSave, onClose }: Pro
         <div className="flex gap-3 pt-2">
           <button
             onClick={handleSubmit}
-            className="flex-1 bg-[#3baaff] text-[#0d0f14] rounded py-2 text-sm font-semibold hover:bg-[#5bbfff]"
+            disabled={submitting}
+            className="flex-1 bg-[#3baaff] text-[#0d0f14] rounded py-2 text-sm font-semibold hover:bg-[#5bbfff] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {task ? 'Save Changes' : 'Create Task'}
           </button>
