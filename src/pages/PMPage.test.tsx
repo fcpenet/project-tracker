@@ -3,14 +3,14 @@ import { render, screen, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import PMPage from './PMPage'
 import { TaskProvider } from '@/context/TaskContext'
-import { AuthProvider } from '@/context/AuthContext'
+import { AuthProvider } from 'turso-auth'
 import * as taskServiceModule from '@/services/taskService'
 import { mockTasks } from '@/test/mocks/taskService.mock'
 
 function Wrapper({ children }: { children: React.ReactNode }) {
   return (
     <MemoryRouter initialEntries={['/projects/1']}>
-      <AuthProvider>
+      <AuthProvider apiUrl="http://localhost">
         <TaskProvider projectId={1}>
           {children}
         </TaskProvider>

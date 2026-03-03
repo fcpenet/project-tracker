@@ -1,4 +1,4 @@
-import { notifyUnauthorized, isAuthError } from './authFetch'
+import { notifyUnauthorized, isAuthError } from 'turso-auth'
 
 const BASE_URL = import.meta.env.VITE_API_URL
 

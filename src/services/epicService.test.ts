@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { epicService } from './epicService'
-import * as authFetch from './authFetch'
+import * as authFetch from 'turso-auth'
 
-vi.mock('./authFetch', () => ({ notifyUnauthorized: vi.fn(), isAuthError: (s: number) => s === 401 || s === 403 }))
+vi.mock('turso-auth', () => ({ notifyUnauthorized: vi.fn(), isAuthError: (s: number) => s === 401 || s === 403 }))
 
 const backendEpic = {
   id: 1,

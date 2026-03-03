@@ -1,10 +1,20 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
-import { AuthProvider } from '@/context/AuthContext'
+import { AuthProvider, ProtectedRoute } from 'turso-auth'
 import { TaskProvider } from '@/context/TaskContext'
-import ProtectedRoute from '@/components/ProtectedRoute'
 import PMPage from '@/pages/PMPage'
 import LoginPage from '@/pages/LoginPage'
 import ProjectsPage from '@/pages/ProjectsPage'
+import { clearStoredOrgId } from '@/services/projectService'
+
+function AuthCleanup() {
+  useEffect(() => {
+    const handler = () => clearStoredOrgId()
+    window.addEventListener('auth:unauthorized', handler)
+    return () => window.removeEventListener('auth:unauthorized', handler)
+  }, [])
+  return null
+}
 
 function ProjectBoard() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -18,7 +28,8 @@ function ProjectBoard() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
+      <AuthProvider apiUrl={import.meta.env.VITE_API_URL}>
+        <AuthCleanup />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<Navigate to="/projects" replace />} />

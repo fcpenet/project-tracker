@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '@/context/AuthContext'
-import { projectService } from '@/services/projectService'
+import { useAuth } from 'turso-auth'
+import { projectService, setStoredOrgId } from '@/services/projectService'
 import type { Project } from '@/services/projectService'
+import { organizationService } from '@/services/organizationService'
 import NewProjectModal from '@/components/pm/NewProjectModal'
 
 export default function ProjectsPage() {
@@ -26,7 +27,12 @@ export default function ProjectsPage() {
     }
   }
 
-  useEffect(() => { loadProjects() }, [])
+  useEffect(() => {
+    loadProjects()
+    organizationService.getAll().then(orgs => {
+      if (orgs.length > 0) setStoredOrgId(orgs[0].id)
+    }).catch(() => {})
+  }, [])
 
   function handleProjectCreated() {
     setShowModal(false)

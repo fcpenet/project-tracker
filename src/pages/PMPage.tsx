@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useLocation, useParams } from 'react-router-dom'
 import { useTaskContext } from '@/context/TaskContext'
-import { useAuth } from '@/context/AuthContext'
+import { useAuth } from 'turso-auth'
 import { resetTasksCache } from '@/services/taskService'
 import { epicService } from '@/services/epicService'
 import type { Epic } from '@/services/epicService'
