@@ -61,7 +61,7 @@ export default function StatsBar({ tasks, view, onViewChange, onNewTask, onNewEp
                     className="flex items-center gap-1 text-gray-400 hover:text-gray-200 transition-colors truncate max-w-64"
                   >
                     <span>{subtitle}</span>
-                    <span className="text-gray-600">▾</span>
+                    <span className="text-red-400 text-[10px] leading-none">▼</span>
                   </button>
                   {switcherOpen && (
                     <div className="absolute left-0 top-full mt-1 w-56 bg-[#1e2330] border border-[#2a2d36] rounded-lg shadow-xl z-50 py-1 overflow-hidden">
