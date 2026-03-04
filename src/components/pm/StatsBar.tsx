@@ -1,5 +1,10 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import type { Task } from '@/types/task'
+
+interface ProjectOption {
+  id: number
+  title: string
+}
 
 interface Props {
   tasks: Task[]
@@ -11,12 +16,28 @@ interface Props {
   onLogout?: () => void
   subtitle?: string
   hasApiKey: boolean
+  projects?: ProjectOption[]
+  currentProjectId?: number
+  onSwitchProject?: (project: ProjectOption) => void
 }
 
-export default function StatsBar({ tasks, view, onViewChange, onNewTask, onNewEpic, onNewProject, onLogout, subtitle, hasApiKey }: Props) {
+export default function StatsBar({ tasks, view, onViewChange, onNewTask, onNewEpic, onNewProject, onLogout, subtitle, hasApiKey, projects, currentProjectId, onSwitchProject }: Props) {
   const done = tasks.filter(t => t.status === 'done').length
   const inProgress = tasks.filter(t => t.status === 'in progress').length
   const [tooltipOpen, setTooltipOpen] = useState(false)
+  const [switcherOpen, setSwitcherOpen] = useState(false)
+  const switcherRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!switcherOpen) return
+    function handle(e: MouseEvent) {
+      if (switcherRef.current && !switcherRef.current.contains(e.target as Node)) {
+        setSwitcherOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handle)
+    return () => document.removeEventListener('mousedown', handle)
+  }, [switcherOpen])
 
   return (
     <div className="border-b border-[#2a2d36]">
@@ -32,7 +53,39 @@ export default function StatsBar({ tasks, view, onViewChange, onNewTask, onNewEp
           {subtitle && (
             <>
               <span>/</span>
-              <span className="text-gray-400 truncate max-w-64">{subtitle}</span>
+              {projects && projects.length > 0 && onSwitchProject ? (
+                <div ref={switcherRef} className="relative">
+                  <button
+                    data-testid="project-switcher"
+                    onClick={() => setSwitcherOpen(o => !o)}
+                    className="flex items-center gap-1 text-gray-400 hover:text-gray-200 transition-colors truncate max-w-64"
+                  >
+                    <span>{subtitle}</span>
+                    <span className="text-gray-600">▾</span>
+                  </button>
+                  {switcherOpen && (
+                    <div className="absolute left-0 top-full mt-1 w-56 bg-[#1e2330] border border-[#2a2d36] rounded-lg shadow-xl z-50 py-1 overflow-hidden">
+                      {projects.map(p => (
+                        <button
+                          key={p.id}
+                          data-testid={`project-option-${p.id}`}
+                          aria-current={p.id === currentProjectId ? 'true' : undefined}
+                          onClick={() => { setSwitcherOpen(false); onSwitchProject(p) }}
+                          className={`w-full text-left px-3 py-2 text-xs transition-colors ${
+                            p.id === currentProjectId
+                              ? 'text-[#3baaff] bg-[#3baaff]/10'
+                              : 'text-gray-300 hover:bg-[#2a2d36]'
+                          }`}
+                        >
+                          {p.title}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <span className="text-gray-400 truncate max-w-64">{subtitle}</span>
+              )}
             </>
           )}
         </div>

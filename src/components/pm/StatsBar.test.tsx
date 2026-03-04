@@ -80,4 +80,50 @@ describe('StatsBar', () => {
       expect(onNewProject).toHaveBeenCalled()
     })
   })
+
+  describe('Project switcher', () => {
+    const projects = [
+      { id: 1, title: 'Alpha' },
+      { id: 2, title: 'Beta' },
+    ]
+
+    it('shows current project name in breadcrumb', () => {
+      render(<StatsBar {...baseProps} subtitle="Alpha" projects={projects} currentProjectId={1} onSwitchProject={vi.fn()} />)
+      expect(screen.getByTestId('project-switcher')).toHaveTextContent('Alpha')
+    })
+
+    it('opens project list on click', () => {
+      render(<StatsBar {...baseProps} subtitle="Alpha" projects={projects} currentProjectId={1} onSwitchProject={vi.fn()} />)
+      fireEvent.click(screen.getByTestId('project-switcher'))
+      expect(screen.getByTestId('project-option-2')).toBeInTheDocument()
+    })
+
+    it('calls onSwitchProject when a project is selected', () => {
+      const onSwitchProject = vi.fn()
+      render(<StatsBar {...baseProps} subtitle="Alpha" projects={projects} currentProjectId={1} onSwitchProject={onSwitchProject} />)
+      fireEvent.click(screen.getByTestId('project-switcher'))
+      fireEvent.click(screen.getByTestId('project-option-2'))
+      expect(onSwitchProject).toHaveBeenCalledWith(projects[1])
+    })
+
+    it('marks current project with aria-current', () => {
+      render(<StatsBar {...baseProps} subtitle="Alpha" projects={projects} currentProjectId={1} onSwitchProject={vi.fn()} />)
+      fireEvent.click(screen.getByTestId('project-switcher'))
+      expect(screen.getByTestId('project-option-1')).toHaveAttribute('aria-current', 'true')
+      expect(screen.getByTestId('project-option-2')).not.toHaveAttribute('aria-current')
+    })
+
+    it('closes dropdown after selecting a project', () => {
+      render(<StatsBar {...baseProps} subtitle="Alpha" projects={projects} currentProjectId={1} onSwitchProject={vi.fn()} />)
+      fireEvent.click(screen.getByTestId('project-switcher'))
+      fireEvent.click(screen.getByTestId('project-option-2'))
+      expect(screen.queryByTestId('project-option-2')).not.toBeInTheDocument()
+    })
+
+    it('falls back to plain text when no projects provided', () => {
+      render(<StatsBar {...baseProps} subtitle="Alpha" />)
+      expect(screen.queryByTestId('project-switcher')).not.toBeInTheDocument()
+      expect(screen.getAllByText('Alpha').length).toBeGreaterThan(0)
+    })
+  })
 })

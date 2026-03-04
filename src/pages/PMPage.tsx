@@ -5,6 +5,7 @@ import { useAuth } from 'turso-auth'
 import { resetTasksCache } from '@/services/taskService'
 import { epicService } from '@/services/epicService'
 import type { Epic } from '@/services/epicService'
+import { projectService } from '@/services/projectService'
 import type { Task, CreateTaskInput } from '@/types/task'
 import KanbanBoard from '@/components/pm/KanbanBoard'
 import ListView from '@/components/pm/ListView'
@@ -31,6 +32,7 @@ export default function PMPage() {
   const [filterTag, setFilterTag] = useState('all')
   const [filterEpic, setFilterEpic] = useState('all')
   const [epics, setEpics] = useState<Epic[]>([])
+  const [projects, setProjects] = useState<{ id: number; title: string }[]>([])
 
   const noEpics = error === 'This project has no epics yet'
 
@@ -40,6 +42,10 @@ export default function PMPage() {
     if (!projectId) return
     epicService.getAll(Number(projectId)).then(setEpics).catch(() => {})
   }, [projectId])
+
+  useEffect(() => {
+    projectService.getAll().then(data => setProjects(data.map(p => ({ id: p.id, title: p.title })))).catch(() => {})
+  }, [])
 
   const allTags = [...new Set(tasks.flatMap(t => t.tags))]
 
@@ -83,6 +89,9 @@ export default function PMPage() {
         onLogout={logout}
         subtitle={projectTitle}
         hasApiKey={true}
+        projects={projects}
+        currentProjectId={Number(projectId)}
+        onSwitchProject={p => navigate(`/projects/${p.id}`, { state: { projectTitle: p.title } })}
       />
 
       {loading && (
