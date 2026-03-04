@@ -143,6 +143,11 @@ export default function PMPage() {
           allTags={allTags}
           onSave={handleSave}
           onClose={() => { setShowTaskModal(false); setEditTask(null) }}
+          onCreateEpic={async (title) => {
+            const epic = await epicService.create(Number(projectId), title)
+            setEpics(prev => [...prev, epic])
+            return { id: epic.id, title: epic.title }
+          }}
         />
       )}
 

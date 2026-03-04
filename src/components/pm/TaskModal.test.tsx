@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import TaskModal from './TaskModal'
 import { mockTasks } from '@/test/mocks/taskService.mock'
@@ -50,6 +50,67 @@ describe('TaskModal — Create Mode', () => {
     await user.click(screen.getByText('Create Task'))
     await user.click(screen.getByText('Create Task'))
     expect(onSave).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('TaskModal — Inline Epic Creation', () => {
+  const epics = [{ id: 1, title: 'Sprint 1' }]
+
+  it('shows "+ New Epic" button when onCreateEpic is provided', () => {
+    render(<TaskModal task={null} epics={epics} allTags={[]} onSave={vi.fn()} onClose={vi.fn()} onCreateEpic={vi.fn()} />)
+    expect(screen.getByText('+ New Epic')).toBeInTheDocument()
+  })
+
+  it('does not show "+ New Epic" button when onCreateEpic is not provided', () => {
+    render(<TaskModal task={null} epics={epics} allTags={[]} onSave={vi.fn()} onClose={vi.fn()} />)
+    expect(screen.queryByText('+ New Epic')).not.toBeInTheDocument()
+  })
+
+  it('shows inline input on "+ New Epic" click', () => {
+    render(<TaskModal task={null} epics={epics} allTags={[]} onSave={vi.fn()} onClose={vi.fn()} onCreateEpic={vi.fn()} />)
+    fireEvent.click(screen.getByText('+ New Epic'))
+    expect(screen.getByPlaceholderText(/epic title/i)).toBeInTheDocument()
+  })
+
+  it('calls onCreateEpic with the entered title', async () => {
+    const user = userEvent.setup()
+    const onCreateEpic = vi.fn().mockResolvedValue({ id: 99, title: 'New Sprint' })
+    render(<TaskModal task={null} epics={epics} allTags={[]} onSave={vi.fn()} onClose={vi.fn()} onCreateEpic={onCreateEpic} />)
+    fireEvent.click(screen.getByText('+ New Epic'))
+    await user.type(screen.getByPlaceholderText(/epic title/i), 'New Sprint')
+    fireEvent.click(screen.getByText('Create'))
+    await act(async () => {})
+    expect(onCreateEpic).toHaveBeenCalledWith('New Sprint')
+  })
+
+  it('adds new epic to select and selects it', async () => {
+    const user = userEvent.setup()
+    const onCreateEpic = vi.fn().mockResolvedValue({ id: 99, title: 'New Sprint' })
+    render(<TaskModal task={null} epics={epics} allTags={[]} onSave={vi.fn()} onClose={vi.fn()} onCreateEpic={onCreateEpic} />)
+    fireEvent.click(screen.getByText('+ New Epic'))
+    await user.type(screen.getByPlaceholderText(/epic title/i), 'New Sprint')
+    fireEvent.click(screen.getByText('Create'))
+    await act(async () => {})
+    expect(screen.getByDisplayValue('New Sprint')).toBeInTheDocument()
+  })
+
+  it('hides inline input after epic is created', async () => {
+    const user = userEvent.setup()
+    const onCreateEpic = vi.fn().mockResolvedValue({ id: 99, title: 'New Sprint' })
+    render(<TaskModal task={null} epics={epics} allTags={[]} onSave={vi.fn()} onClose={vi.fn()} onCreateEpic={onCreateEpic} />)
+    fireEvent.click(screen.getByText('+ New Epic'))
+    await user.type(screen.getByPlaceholderText(/epic title/i), 'New Sprint')
+    fireEvent.click(screen.getByText('Create'))
+    await act(async () => {})
+    expect(screen.queryByPlaceholderText(/epic title/i)).not.toBeInTheDocument()
+  })
+
+  it('hides inline input on cancel', () => {
+    render(<TaskModal task={null} epics={epics} allTags={[]} onSave={vi.fn()} onClose={vi.fn()} onCreateEpic={vi.fn()} />)
+    fireEvent.click(screen.getByText('+ New Epic'))
+    expect(screen.getByPlaceholderText(/epic title/i)).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Discard'))
+    expect(screen.queryByPlaceholderText(/epic title/i)).not.toBeInTheDocument()
   })
 })
 

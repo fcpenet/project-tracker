@@ -12,12 +12,13 @@ interface Props {
   allTags: string[]
   onSave: (data: CreateTaskInput, epicId: number) => Promise<void>
   onClose: () => void
+  onCreateEpic?: (title: string) => Promise<EpicOption>
 }
 
 const priorities: Priority[] = ['urgent', 'high', 'medium', 'low']
 const statuses: Status[] = ['backlog', 'in progress', 'review', 'done']
 
-export default function TaskModal({ task, epics, allTags, onSave, onClose }: Props) {
+export default function TaskModal({ task, epics, allTags, onSave, onClose, onCreateEpic }: Props) {
   const [title, setTitle] = useState(task?.title ?? '')
   const [description, setDescription] = useState(task?.description ?? '')
   const [status, setStatus] = useState<Status>(task?.status ?? 'backlog')
@@ -25,10 +26,28 @@ export default function TaskModal({ task, epics, allTags, onSave, onClose }: Pro
   const [dueDate, setDueDate] = useState(task?.dueDate ?? '')
   const [tags, setTags] = useState<string[]>(task?.tags ?? [])
   const [newTag, setNewTag] = useState('')
+  const [epicsList, setEpicsList] = useState<EpicOption[]>(epics)
   const [epicId, setEpicId] = useState<number>(
     task ? Number(task.epicId) : (epics[0]?.id ?? 0)
   )
   const [submitting, setSubmitting] = useState(false)
+  const [showNewEpic, setShowNewEpic] = useState(false)
+  const [newEpicTitle, setNewEpicTitle] = useState('')
+  const [creatingEpic, setCreatingEpic] = useState(false)
+
+  async function handleCreateEpic() {
+    if (!newEpicTitle.trim() || !onCreateEpic) return
+    setCreatingEpic(true)
+    try {
+      const epic = await onCreateEpic(newEpicTitle.trim())
+      setEpicsList(prev => [...prev, epic])
+      setEpicId(epic.id)
+      setNewEpicTitle('')
+      setShowNewEpic(false)
+    } finally {
+      setCreatingEpic(false)
+    }
+  }
 
   async function handleSubmit() {
     if (!title.trim()) return
@@ -79,9 +98,45 @@ export default function TaskModal({ task, epics, allTags, onSave, onClose }: Pro
               onChange={e => setEpicId(Number(e.target.value))}
               className="w-full bg-[#0d0f14] border border-[#2a2d36] rounded px-2 py-1 text-sm text-gray-200 mt-1"
             >
-              {epics.map(e => <option key={e.id} value={e.id}>{e.title}</option>)}
-              {epics.length === 0 && <option value={0} disabled>No epics available</option>}
+              {epicsList.map(e => <option key={e.id} value={e.id}>{e.title}</option>)}
+              {epicsList.length === 0 && <option value={0} disabled>No epics available</option>}
             </select>
+            {onCreateEpic && !showNewEpic && (
+              <button
+                type="button"
+                onClick={() => setShowNewEpic(true)}
+                className="text-[10px] text-[#3baaff] hover:text-[#5bbfff] mt-1 transition-colors"
+              >
+                + New Epic
+              </button>
+            )}
+            {showNewEpic && (
+              <div className="flex gap-2 mt-1 items-center">
+                <input
+                  autoFocus
+                  placeholder="Epic title"
+                  value={newEpicTitle}
+                  onChange={e => setNewEpicTitle(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleCreateEpic()}
+                  className="flex-1 bg-[#0d0f14] border border-[#2a2d36] rounded px-2 py-1 text-xs text-gray-200 outline-none focus:border-[#3baaff]"
+                />
+                <button
+                  type="button"
+                  onClick={handleCreateEpic}
+                  disabled={creatingEpic || !newEpicTitle.trim()}
+                  className="text-xs px-2 py-1 bg-[#3baaff] text-[#0d0f14] rounded font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {creatingEpic ? '…' : 'Create'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowNewEpic(false); setNewEpicTitle('') }}
+                  className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                >
+                  Discard
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div>
