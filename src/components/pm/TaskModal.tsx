@@ -91,21 +91,6 @@ export default function TaskModal({ task, epics, allTags, onSave, onClose, onCre
           {task ? 'Edit Task' : 'New Task'}
         </h2>
 
-        <input
-          placeholder="Task title"
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-          className="w-full bg-[#0d0f14] border border-[#2a2d36] rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-[#3baaff]"
-        />
-
-        <textarea
-          placeholder="Description (optional)"
-          value={description}
-          onChange={e => setDescription(e.target.value)}
-          rows={2}
-          className="w-full bg-[#0d0f14] border border-[#2a2d36] rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-[#3baaff] resize-none"
-        />
-
         {/* Project selector (new task only) */}
         {!task && projects && projects.length > 0 && (
           <div>
@@ -120,6 +105,21 @@ export default function TaskModal({ task, epics, allTags, onSave, onClose, onCre
             </select>
           </div>
         )}
+
+        <input
+          placeholder="Task title"
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+          className="w-full bg-[#0d0f14] border border-[#2a2d36] rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-[#3baaff]"
+        />
+
+        <textarea
+          placeholder="Description (optional)"
+          value={description}
+          onChange={e => setDescription(e.target.value)}
+          rows={2}
+          className="w-full bg-[#0d0f14] border border-[#2a2d36] rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-[#3baaff] resize-none"
+        />
 
         {/* Epic selector (new task) or epic label (edit task) */}
         {!task ? (
