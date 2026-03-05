@@ -2,13 +2,15 @@ import { useState } from 'react'
 import type { Task } from '@/types/task'
 import TaskCard from './TaskCard'
 
-const COLUMNS: Task['status'][] = ['backlog', 'in progress', 'review', 'done']
+const COLUMNS: Task['status'][] = ['backlog', 'in progress', 'review', 'done', 'blocked', 'will not implement']
 
 const columnAccent: Record<Task['status'], string> = {
-  backlog:      'border-t-gray-600',
-  'in progress':'border-t-[#3baaff]',
-  review:       'border-t-[#f5c542]',
-  done:         'border-t-[#3bff8c]',
+  backlog:              'border-t-gray-600',
+  'in progress':        'border-t-[#3baaff]',
+  review:               'border-t-[#f5c542]',
+  done:                 'border-t-[#3bff8c]',
+  blocked:              'border-t-[#ff3b3b]',
+  'will not implement': 'border-t-gray-600',
 }
 
 interface Props {
@@ -46,12 +48,12 @@ export default function KanbanBoard({ tasks, epicNames, onEdit, onDelete, onMove
         </div>
       </div>
 
-      {/* Desktop: all columns */}
-      <div className="hidden md:flex gap-4 p-6 min-h-[calc(100vh-120px)]">
+      {/* Desktop: all columns, scrollable */}
+      <div className="hidden md:flex gap-4 p-6 min-h-[calc(100vh-120px)] overflow-x-auto">
         {COLUMNS.map(col => {
           const colTasks = tasks.filter(t => t.status === col)
           return (
-            <div key={col} className={`kanban-column flex-1 ${columnAccent[col]}`}>
+            <div key={col} className={`kanban-column flex-shrink-0 w-56 xl:w-64 ${columnAccent[col]}`}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-gray-400 uppercase tracking-widest">{col}</span>
                 <span className="text-xs text-gray-600">{colTasks.length}</span>

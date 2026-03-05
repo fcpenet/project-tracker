@@ -7,7 +7,7 @@ const priorityColors: Record<Task['priority'], string> = {
   low:    'text-[#3baaff]',
 }
 
-const COLUMNS: Task['status'][] = ['backlog', 'in progress', 'review', 'done']
+const COLUMNS: Task['status'][] = ['backlog', 'in progress', 'review', 'done', 'blocked', 'will not implement']
 
 interface Props {
   tasks: Task[]

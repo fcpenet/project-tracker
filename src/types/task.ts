@@ -1,5 +1,5 @@
 export type Priority = 'urgent' | 'high' | 'medium' | 'low'
-export type Status = 'backlog' | 'in progress' | 'review' | 'done'
+export type Status = 'backlog' | 'in progress' | 'review' | 'done' | 'blocked' | 'will not implement'
 
 export interface Task {
   id: string

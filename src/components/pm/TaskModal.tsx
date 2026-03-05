@@ -24,7 +24,7 @@ interface Props {
 }
 
 const priorities: Priority[] = ['urgent', 'high', 'medium', 'low']
-const statuses: Status[] = ['backlog', 'in progress', 'review', 'done']
+const statuses: Status[] = ['backlog', 'in progress', 'review', 'done', 'blocked', 'will not implement']
 
 export default function TaskModal({ task, epics, allTags, onSave, onClose, onCreateEpic, projects, currentProjectId, onFetchEpics }: Props) {
   const [title, setTitle] = useState(task?.title ?? '')
