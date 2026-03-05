@@ -72,15 +72,15 @@ describe('TaskModal — Inline Epic Creation', () => {
     expect(screen.getByPlaceholderText(/epic title/i)).toBeInTheDocument()
   })
 
-  it('calls onCreateEpic with the entered title', async () => {
+  it('calls onCreateEpic with the entered title and projectId', async () => {
     const user = userEvent.setup()
     const onCreateEpic = vi.fn().mockResolvedValue({ id: 99, title: 'New Sprint' })
-    render(<TaskModal task={null} epics={epics} allTags={[]} onSave={vi.fn()} onClose={vi.fn()} onCreateEpic={onCreateEpic} />)
+    render(<TaskModal task={null} epics={epics} allTags={[]} onSave={vi.fn()} onClose={vi.fn()} onCreateEpic={onCreateEpic} currentProjectId={1} />)
     fireEvent.click(screen.getByText('+ New Epic'))
     await user.type(screen.getByPlaceholderText(/epic title/i), 'New Sprint')
     fireEvent.click(screen.getByText('Create'))
     await act(async () => {})
-    expect(onCreateEpic).toHaveBeenCalledWith('New Sprint')
+    expect(onCreateEpic).toHaveBeenCalledWith('New Sprint', 1)
   })
 
   it('adds new epic to select and selects it', async () => {
@@ -111,6 +111,39 @@ describe('TaskModal — Inline Epic Creation', () => {
     expect(screen.getByPlaceholderText(/epic title/i)).toBeInTheDocument()
     fireEvent.click(screen.getByText('Discard'))
     expect(screen.queryByPlaceholderText(/epic title/i)).not.toBeInTheDocument()
+  })
+})
+
+describe('TaskModal — Project Selector', () => {
+  const projects = [{ id: 1, title: 'Alpha' }, { id: 2, title: 'Beta' }]
+  const epics = [{ id: 10, title: 'Sprint 1' }]
+
+  it('shows project select when projects are provided', () => {
+    render(<TaskModal task={null} epics={epics} allTags={[]} onSave={vi.fn()} onClose={vi.fn()} projects={projects} currentProjectId={1} />)
+    expect(screen.getByLabelText(/project/i)).toBeInTheDocument()
+  })
+
+  it('does not show project select when projects not provided', () => {
+    render(<TaskModal task={null} epics={epics} allTags={[]} onSave={vi.fn()} onClose={vi.fn()} />)
+    expect(screen.queryByLabelText(/project/i)).not.toBeInTheDocument()
+  })
+
+  it('defaults to currentProjectId', () => {
+    render(<TaskModal task={null} epics={epics} allTags={[]} onSave={vi.fn()} onClose={vi.fn()} projects={projects} currentProjectId={2} />)
+    expect(screen.getByLabelText(/project/i)).toHaveValue('2')
+  })
+
+  it('calls onFetchEpics when project changes', async () => {
+    const user = userEvent.setup()
+    const onFetchEpics = vi.fn().mockResolvedValue([{ id: 20, title: 'Beta Sprint' }])
+    render(<TaskModal task={null} epics={epics} allTags={[]} onSave={vi.fn()} onClose={vi.fn()} projects={projects} currentProjectId={1} onFetchEpics={onFetchEpics} />)
+    await user.selectOptions(screen.getByLabelText(/project/i), '2')
+    expect(onFetchEpics).toHaveBeenCalledWith(2)
+  })
+
+  it('does not show project select in edit mode', () => {
+    render(<TaskModal task={mockTasks[0]} epics={epics} allTags={[]} onSave={vi.fn()} onClose={vi.fn()} projects={projects} currentProjectId={1} />)
+    expect(screen.queryByLabelText(/project/i)).not.toBeInTheDocument()
   })
 })
 

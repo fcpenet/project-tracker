@@ -1,7 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Task, CreateTaskInput, Priority, Status } from '@/types/task'
 
 interface EpicOption {
+  id: number
+  title: string
+}
+
+interface ProjectOption {
   id: number
   title: string
 }
@@ -12,13 +17,16 @@ interface Props {
   allTags: string[]
   onSave: (data: CreateTaskInput, epicId: number) => Promise<void>
   onClose: () => void
-  onCreateEpic?: (title: string) => Promise<EpicOption>
+  onCreateEpic?: (title: string, projectId: number) => Promise<EpicOption>
+  projects?: ProjectOption[]
+  currentProjectId?: number
+  onFetchEpics?: (projectId: number) => Promise<EpicOption[]>
 }
 
 const priorities: Priority[] = ['urgent', 'high', 'medium', 'low']
 const statuses: Status[] = ['backlog', 'in progress', 'review', 'done']
 
-export default function TaskModal({ task, epics, allTags, onSave, onClose, onCreateEpic }: Props) {
+export default function TaskModal({ task, epics, allTags, onSave, onClose, onCreateEpic, projects, currentProjectId, onFetchEpics }: Props) {
   const [title, setTitle] = useState(task?.title ?? '')
   const [description, setDescription] = useState(task?.description ?? '')
   const [status, setStatus] = useState<Status>(task?.status ?? 'backlog')
@@ -34,12 +42,21 @@ export default function TaskModal({ task, epics, allTags, onSave, onClose, onCre
   const [showNewEpic, setShowNewEpic] = useState(false)
   const [newEpicTitle, setNewEpicTitle] = useState('')
   const [creatingEpic, setCreatingEpic] = useState(false)
+  const [selectedProjectId, setSelectedProjectId] = useState<number>(currentProjectId ?? 0)
+
+  useEffect(() => {
+    if (!onFetchEpics || selectedProjectId === (currentProjectId ?? 0)) return
+    onFetchEpics(selectedProjectId).then(newEpics => {
+      setEpicsList(newEpics)
+      setEpicId(newEpics[0]?.id ?? 0)
+    }).catch(() => {})
+  }, [selectedProjectId])
 
   async function handleCreateEpic() {
     if (!newEpicTitle.trim() || !onCreateEpic) return
     setCreatingEpic(true)
     try {
-      const epic = await onCreateEpic(newEpicTitle.trim())
+      const epic = await onCreateEpic(newEpicTitle.trim(), selectedProjectId)
       setEpicsList(prev => [...prev, epic])
       setEpicId(epic.id)
       setNewEpicTitle('')
@@ -88,6 +105,21 @@ export default function TaskModal({ task, epics, allTags, onSave, onClose, onCre
           rows={2}
           className="w-full bg-[#0d0f14] border border-[#2a2d36] rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-[#3baaff] resize-none"
         />
+
+        {/* Project selector (new task only) */}
+        {!task && projects && projects.length > 0 && (
+          <div>
+            <label htmlFor="task-project" className="text-[10px] text-gray-500 uppercase">Project</label>
+            <select
+              id="task-project"
+              value={selectedProjectId}
+              onChange={e => setSelectedProjectId(Number(e.target.value))}
+              className="w-full bg-[#0d0f14] border border-[#2a2d36] rounded px-2 py-1 text-sm text-gray-200 mt-1"
+            >
+              {projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+            </select>
+          </div>
+        )}
 
         {/* Epic selector (new task) or epic label (edit task) */}
         {!task ? (

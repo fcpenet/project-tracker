@@ -143,9 +143,15 @@ export default function PMPage() {
           allTags={allTags}
           onSave={handleSave}
           onClose={() => { setShowTaskModal(false); setEditTask(null) }}
-          onCreateEpic={async (title) => {
-            const epic = await epicService.create(Number(projectId), title)
-            setEpics(prev => [...prev, epic])
+          projects={projects}
+          currentProjectId={Number(projectId)}
+          onFetchEpics={async (pid) => {
+            const data = await epicService.getAll(pid)
+            return data.map(e => ({ id: e.id, title: e.title }))
+          }}
+          onCreateEpic={async (title, pid) => {
+            const epic = await epicService.create(pid, title)
+            if (pid === Number(projectId)) setEpics(prev => [...prev, epic])
             return { id: epic.id, title: epic.title }
           }}
         />
