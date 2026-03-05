@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import type { Task } from '@/types/task'
 
 interface ProjectOption {
@@ -27,18 +27,6 @@ export default function StatsBar({ tasks, view, onViewChange, onNewTask, onNewEp
   const [tooltipOpen, setTooltipOpen] = useState(false)
   const [switcherOpen, setSwitcherOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const switcherRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!switcherOpen) return
-    function handle(e: MouseEvent) {
-      if (switcherRef.current && !switcherRef.current.contains(e.target as Node)) {
-        setSwitcherOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handle)
-    return () => document.removeEventListener('mousedown', handle)
-  }, [switcherOpen])
 
   const closeMenu = useCallback(() => setMenuOpen(false), [])
 
@@ -116,45 +104,63 @@ export default function StatsBar({ tasks, view, onViewChange, onNewTask, onNewEp
     <div className="border-b border-[#2a2d36]">
       {/* Top bar: breadcrumb + actions */}
       <div className="flex items-center justify-between px-4 py-2">
-        <div className="flex items-center gap-2 text-xs text-gray-500">
-          <button onClick={onNewProject} className="hover:text-[#3baaff] transition-colors">
+        <div className="flex items-center gap-2">
+          <button onClick={onNewProject} className="text-xs text-gray-500 hover:text-[#3baaff] transition-colors shrink-0">
             kikOS PM
           </button>
           {subtitle && (
             <>
-              <span>/</span>
+              <span className="text-xs text-gray-600">/</span>
               {projects && projects.length > 0 && onSwitchProject ? (
-                <div ref={switcherRef} className="relative">
+                <>
                   <button
                     data-testid="project-switcher"
-                    onClick={() => setSwitcherOpen(o => !o)}
-                    className="flex items-center gap-1 text-gray-400 hover:text-gray-200 transition-colors truncate max-w-40 md:max-w-64"
+                    onClick={() => setSwitcherOpen(true)}
+                    className="flex items-center gap-1.5 text-sm font-semibold text-gray-200 hover:text-white transition-colors truncate max-w-48 md:max-w-80"
                   >
                     <span>{subtitle}</span>
-                    <span className="text-red-400 text-[10px] leading-none">▼</span>
+                    <span className="text-gray-500 text-[10px] leading-none shrink-0">▼</span>
                   </button>
+
                   {switcherOpen && (
-                    <div className="absolute left-0 top-full mt-1 w-56 bg-[#1e2330] border border-[#2a2d36] rounded-lg shadow-xl z-50 py-1 overflow-hidden">
-                      {projects.map(p => (
-                        <button
-                          key={p.id}
-                          data-testid={`project-option-${p.id}`}
-                          aria-current={p.id === currentProjectId ? 'true' : undefined}
-                          onClick={() => { setSwitcherOpen(false); onSwitchProject(p) }}
-                          className={`w-full text-left px-3 py-2 text-xs transition-colors ${
-                            p.id === currentProjectId
-                              ? 'text-[#3baaff] bg-[#3baaff]/10'
-                              : 'text-gray-300 hover:bg-[#2a2d36]'
-                          }`}
-                        >
-                          {p.title}
-                        </button>
-                      ))}
+                    <div
+                      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+                      onClick={() => setSwitcherOpen(false)}
+                    >
+                      <div
+                        className="bg-[#161a23] border border-[#2a2d36] rounded-xl shadow-xl w-full max-w-sm font-mono overflow-hidden"
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-[#2a2d36]">
+                          <span className="text-xs text-gray-500 uppercase tracking-widest">Switch Project</span>
+                          <button
+                            onClick={() => setSwitcherOpen(false)}
+                            className="text-gray-500 hover:text-gray-300 leading-none"
+                          >✕</button>
+                        </div>
+                        <div className="py-1 max-h-80 overflow-y-auto">
+                          {projects.map(p => (
+                            <button
+                              key={p.id}
+                              data-testid={`project-option-${p.id}`}
+                              aria-current={p.id === currentProjectId ? 'true' : undefined}
+                              onClick={() => { setSwitcherOpen(false); onSwitchProject(p) }}
+                              className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                                p.id === currentProjectId
+                                  ? 'text-[#3baaff] bg-[#3baaff]/10'
+                                  : 'text-gray-300 hover:bg-[#2a2d36]'
+                              }`}
+                            >
+                              {p.title}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   )}
-                </div>
+                </>
               ) : (
-                <span className="text-gray-400 truncate max-w-40 md:max-w-64">{subtitle}</span>
+                <span className="text-sm font-semibold text-gray-200 truncate max-w-48 md:max-w-80">{subtitle}</span>
               )}
             </>
           )}
